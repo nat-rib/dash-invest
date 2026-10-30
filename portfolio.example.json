@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-10-28",
+  "currency": "BRL",
+  "positions": [
+    {"institution": "Corretora Exemplo", "asset_class": "acao", "ticker": "EXMP3", "name": "Empresa Fictícia ON", "quantity": 100, "average_cost": 20.00, "current_price": 23.50, "currency": "BRL"},
+    {"institution": "Banco Exemplo", "asset_class": "renda_fixa", "name": "CDB Demonstrativo", "current_value": 10500.00, "currency": "BRL", "indexer": "CDI", "maturity_date": "2028-06-15"}
+  ]
+}
