@@ -13,16 +13,18 @@ except Exception as error: st.error(str(error)); st.stop()
 frame["Seleção"] = frame.apply(lambda row: f"{row['Nome']} — {row['Instituição']}", axis=1)
 selection = st.selectbox("Ativo", frame["Seleção"])
 row = frame.loc[frame["Seleção"] == selection].iloc[0]
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric("Valor atual", money(row["Valor atual"], row["Moeda"]))
 c2.metric("Ganho/perda não realizado", money(row["Ganho/perda"], row["Moeda"]))
 c3.metric("Rentabilidade não realizada", percent(row["Rentabilidade"]))
+c4.metric("Valor convertido", money(row["Valor convertido BRL"], "BRL"))
 st.subheader(row["Nome"])
 details = {
     "Instituição": row["Instituição"], "Classe": row["Classe"], "Ticker": row["Ticker"],
     "Moeda": row["Moeda"], "Quantidade": number(row["Quantidade"]),
-    "Preço médio": money(row["Preço médio"], row["Moeda"]), "Preço atual": money(row["Preço atual"], row["Moeda"]),
+    "Preço médio": money(row["Preço médio"], row["Moeda"]), "Custo da operação": money(row["Custo da operação"], row["Moeda"]), "Preço atual": money(row["Preço atual"], row["Moeda"]),
     "Custo total": money(row["Custo total"], row["Moeda"]), "Indexador": row["Indexador"],
+    "Taxa de conversão": money(row["Taxa de conversão BRL"], "BRL"), "Data da conversão": row["Data da conversão"],
     "Vencimento": row["Vencimento"], "Data de referência": row["Referência"],
     "Data de aplicação": row["Data de aplicação"], "Emissor": row["Emissor"],
     "Taxa anual": percent(row["Taxa anual"] / 100 if row["Taxa anual"] is not None else None),

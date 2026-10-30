@@ -29,8 +29,13 @@ def positions_frame(snapshot: PortfolioSnapshot) -> pd.DataFrame:
             "Instituição": pos.institution, "Classe": pos.asset_class, "Ticker": pos.ticker,
             "Nome": pos.name, "Quantidade": float(pos.quantity) if pos.quantity is not None else None,
             "Preço médio": float(pos.average_cost) if pos.average_cost is not None else None,
+            "Custo da operação": float(pos.operation_cost) if pos.operation_cost is not None else None,
             "Preço atual": float(pos.current_price) if pos.current_price is not None else None,
             "Valor atual": float(value) if value is not None else None,
+            "Valor convertido BRL": float(pos.converted_value_brl) if pos.converted_value_brl is not None else None,
+            "Taxa de conversão BRL": float(pos.conversion_rate_to_brl) if pos.conversion_rate_to_brl is not None else None,
+            "Data da conversão": pos.conversion_date,
+            "Valor consolidado BRL": float(value) if pos.currency == "BRL" and value is not None else (float(pos.converted_value_brl) if pos.converted_value_brl is not None else None),
             "Custo total": float(cost) if cost is not None else None,
             "Ganho/perda": float(gain) if gain is not None else None,
             "Rentabilidade": float(gain / cost) if comparable and cost > 0 else None,
@@ -46,11 +51,11 @@ def positions_frame(snapshot: PortfolioSnapshot) -> pd.DataFrame:
 
 
 def brl_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame[(frame["Moeda"] == "BRL") & frame["Valor atual"].notna()].copy()
+    return frame[frame["Valor consolidado BRL"].notna()].copy()
 
 
 def consolidated_total(frame: pd.DataFrame) -> float:
-    return float(brl_frame(frame)["Valor atual"].sum())
+    return float(brl_frame(frame)["Valor consolidado BRL"].sum())
 
 
 def duplicate_positions(snapshot: PortfolioSnapshot) -> list[tuple[str, str, str]]:

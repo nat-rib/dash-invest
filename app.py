@@ -27,18 +27,18 @@ c1, c2, c3 = st.columns(3)
 c1.metric("Patrimônio consolidado", money(total))
 c2.metric("Instituições", frame["Instituição"].nunique())
 c3.metric("Ativos", len(frame))
-st.caption(f"Última atualização: {snapshot.snapshot_date.strftime('%d/%m/%Y')}. Apenas valores em BRL conhecidos são consolidados.")
+st.caption(f"Última atualização: {snapshot.snapshot_date.strftime('%d/%m/%Y')}. Valores em outras moedas só entram no consolidado quando possuem conversão explícita para BRL.")
 
 if known_brl.empty:
     st.warning("Não há posições em BRL com valor conhecido para exibir a composição.")
 else:
     left, right = st.columns(2)
     with left:
-        by_class = known_brl.groupby("Classe", as_index=False)["Valor atual"].sum()
-        st.plotly_chart(px.pie(by_class, values="Valor atual", names="Classe", title="Composição por classe", hole=.55), use_container_width=True)
+        by_class = known_brl.groupby("Classe", as_index=False)["Valor consolidado BRL"].sum()
+        st.plotly_chart(px.pie(by_class, values="Valor consolidado BRL", names="Classe", title="Composição por classe", hole=.55), use_container_width=True)
     with right:
-        by_institution = known_brl.groupby("Instituição", as_index=False)["Valor atual"].sum()
-        st.plotly_chart(px.bar(by_institution, x="Instituição", y="Valor atual", title="Distribuição por instituição"), use_container_width=True)
+        by_institution = known_brl.groupby("Instituição", as_index=False)["Valor consolidado BRL"].sum()
+        st.plotly_chart(px.bar(by_institution, x="Instituição", y="Valor consolidado BRL", title="Distribuição por instituição"), use_container_width=True)
 
 st.subheader("Posições")
 st.dataframe(frame, use_container_width=True, hide_index=True)

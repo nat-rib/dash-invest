@@ -18,11 +18,16 @@ class Position(BaseModel):
     institution: str = Field(min_length=1)
     asset_class: AssetClass
     ticker: str | None = None
+    market_symbol: str | None = None
     name: str = Field(min_length=1)
     quantity: Decimal | None = Field(default=None, ge=0)
     average_cost: Decimal | None = Field(default=None, ge=0)
+    operation_cost: Decimal | None = Field(default=None, ge=0)
     current_price: Decimal | None = Field(default=None, ge=0)
     current_value: Decimal | None = Field(default=None, ge=0)
+    converted_value_brl: Decimal | None = Field(default=None, ge=0)
+    conversion_rate_to_brl: Decimal | None = Field(default=None, gt=0)
+    conversion_date: date | None = None
     currency: str = Field(min_length=3, max_length=3)
     indexer: str | None = None
     maturity_date: date | None = None

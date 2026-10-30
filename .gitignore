@@ -10,6 +10,7 @@ imports/
 .venv/
 venv/
 .env
+.streamlit/secrets.toml
 __pycache__/
 .pytest_cache/
 *.py[cod]

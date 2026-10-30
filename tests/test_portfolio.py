@@ -18,6 +18,11 @@ def test_foreign_currency_is_not_consolidated():
     assert consolidated_total(positions_frame(data)) == 0
 
 
+def test_explicitly_converted_currency_is_consolidated():
+    data = snapshot('''{"schema_version":1,"snapshot_date":"2026-10-28","currency":"BRL","positions":[{"institution":"A","asset_class":"cripto","name":"BTC","current_value":100,"converted_value_brl":500,"conversion_rate_to_brl":5,"conversion_date":"2026-10-28","currency":"USD"}]}''')
+    assert consolidated_total(positions_frame(data)) == 500
+
+
 def test_direct_value_and_unknown_cost():
     data = snapshot('''{"schema_version":1,"snapshot_date":"2026-10-28","currency":"BRL","positions":[{"institution":"A","asset_class":"renda_fixa","name":"CDB","current_value":100,"currency":"BRL"}]}''')
     row = positions_frame(data).iloc[0]
