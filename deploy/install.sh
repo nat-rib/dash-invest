@@ -10,6 +10,17 @@ if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>
   exit 1
 fi
 
+if ! docker info >/dev/null 2>&1; then
+  echo "O usuário deploy precisa acessar o Docker sem sudo (grupo docker ou socket equivalente)."
+  exit 1
+fi
+
+if ! sudo -n true 2>/dev/null; then
+  echo "O primeiro deploy exige sudo sem senha para o usuário deploy (groupadd/usermod/chown/chmod)."
+  echo "Faça o bootstrap administrativo manual e execute novamente."
+  exit 1
+fi
+
 mkdir -p "$APP_DIR" "$DATA_DIR/.streamlit"
 
 if [[ ! -f "$DATA_DIR/portfolio.json" ]]; then
