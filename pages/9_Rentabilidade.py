@@ -81,7 +81,8 @@ if st.button("Calcular TWR"):
     try:
         periods = []
         for _, row in periods_frame.iterrows():
-            if pd.isna(row["start_date"]) or pd.isna(row["end_date"]):
+            required = ["start_date", "end_date", "start_value", "end_value_after_flows", "net_external_flow"]
+            if any(pd.isna(row[field]) for field in required):
                 continue
             periods.append(TwrPeriod(
                 start_date=pd.to_datetime(row["start_date"]).date(),
