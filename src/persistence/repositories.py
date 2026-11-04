@@ -40,9 +40,10 @@ def _portfolio_from_row(row: sqlite3.Row) -> Portfolio:
 def _position_from_row(row: sqlite3.Row) -> PortfolioPosition:
     return PortfolioPosition(
         portfolio_id=row["portfolio_id"], instrument_id=row["instrument_id"],
-        institution=row["institution"], quantity=Decimal(row["quantity"]),
+        institution=row["institution"], quantity=Decimal(row["quantity"]) if row["quantity"] is not None else None,
         average_cost=Decimal(row["average_cost"]) if row["average_cost"] is not None else None,
         cost_currency=row["cost_currency"], as_of=date.fromisoformat(row["as_of"]),
+        metadata=json.loads(row["metadata_json"]),
     )
 
 
@@ -64,16 +65,23 @@ class PortfolioRepository:
     def __init__(self, database: SQLiteDatabase):
         self.database = database
 
-    def save(self, portfolio: Portfolio) -> Portfolio:
-        with self.database.transaction() as connection:
-            connection.execute(
+    def save(self, portfolio: Portfolio, connection: sqlite3.Connection | None = None) -> Portfolio:
+        if connection is not None:
+            self._save(connection, portfolio)
+        else:
+            with self.database.transaction() as tx:
+                self._save(tx, portfolio)
+        return portfolio
+
+    @staticmethod
+    def _save(connection: sqlite3.Connection, portfolio: Portfolio) -> None:
+        connection.execute(
                 """INSERT INTO portfolios (id, name, base_currency, created_at)
                    VALUES (?, ?, ?, ?)
                    ON CONFLICT(id) DO UPDATE SET name=excluded.name,
                        base_currency=excluded.base_currency""",
                 (portfolio.id, portfolio.name, portfolio.base_currency, portfolio.created_at.isoformat()),
             )
-        return portfolio
 
     def get(self, portfolio_id: str) -> Portfolio | None:
         with self.database.connection() as connection:
@@ -90,10 +98,18 @@ class InstrumentRepository:
     def __init__(self, database: SQLiteDatabase):
         self.database = database
 
-    def save(self, instrument: Instrument) -> Instrument:
-        now = datetime.now().astimezone().isoformat()
-        with self.database.transaction() as connection:
-            connection.execute(
+    def save(self, instrument: Instrument, connection: sqlite3.Connection | None = None) -> Instrument:
+        if connection is not None:
+            self._save(connection, instrument)
+        else:
+            with self.database.transaction() as tx:
+                self._save(tx, instrument)
+        return instrument
+
+    @staticmethod
+    def _save(connection: sqlite3.Connection, instrument: Instrument) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        connection.execute(
                 """INSERT INTO instruments (
                        id, name, asset_class, subclass, currency, country, exchange,
                        issuer_id, provider_symbols_json, metadata_json, created_at, updated_at
@@ -109,7 +125,6 @@ class InstrumentRepository:
                  instrument.currency, instrument.country, instrument.exchange, instrument.issuer_id,
                  _json_dump(instrument.provider_symbols), _json_dump(instrument.metadata), now, now),
             )
-        return instrument
 
     def get(self, instrument_id: str) -> Instrument | None:
         with self.database.connection() as connection:
@@ -128,19 +143,29 @@ class PortfolioPositionRepository:
     def __init__(self, database: SQLiteDatabase):
         self.database = database
 
-    def save_snapshot(self, position: PortfolioPosition) -> PortfolioPosition:
-        with self.database.transaction() as connection:
-            connection.execute(
+    def save_snapshot(self, position: PortfolioPosition, connection: sqlite3.Connection | None = None) -> PortfolioPosition:
+        if connection is not None:
+            self._save_snapshot(connection, position)
+        else:
+            with self.database.transaction() as tx:
+                self._save_snapshot(tx, position)
+        return position
+
+    @staticmethod
+    def _save_snapshot(connection: sqlite3.Connection, position: PortfolioPosition) -> None:
+        connection.execute(
                 """INSERT INTO portfolio_positions (
                        portfolio_id, instrument_id, institution, quantity,
                        average_cost, cost_currency, as_of
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(portfolio_id, instrument_id, institution, as_of)
                    DO UPDATE SET quantity=excluded.quantity,
-                       average_cost=excluded.average_cost, cost_currency=excluded.cost_currency""",
+                       average_cost=excluded.average_cost, cost_currency=excluded.cost_currency,
+                       metadata_json=excluded.metadata_json""",
                 (position.portfolio_id, position.instrument_id, position.institution,
-                 str(position.quantity), str(position.average_cost) if position.average_cost is not None else None,
-                 position.cost_currency, position.as_of.isoformat()),
+                 str(position.quantity) if position.quantity is not None else None,
+                 str(position.average_cost) if position.average_cost is not None else None,
+                 position.cost_currency, position.as_of.isoformat(), _json_dump(position.metadata)),
             )
         return position
 

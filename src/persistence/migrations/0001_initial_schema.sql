@@ -24,10 +24,11 @@ CREATE TABLE portfolio_positions (
     portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE RESTRICT,
     instrument_id TEXT NOT NULL REFERENCES instruments(id) ON DELETE RESTRICT,
     institution TEXT NOT NULL CHECK (length(trim(institution)) > 0),
-    quantity TEXT NOT NULL,
+    quantity TEXT,
     average_cost TEXT,
     cost_currency TEXT NOT NULL CHECK (length(cost_currency) = 3),
     as_of TEXT NOT NULL,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
     PRIMARY KEY (portfolio_id, instrument_id, institution, as_of)
 );
 
