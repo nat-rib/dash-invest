@@ -32,8 +32,8 @@ def test_does_not_auto_suggest_ambiguous_transfer():
 
 
 def test_explicit_transfer_id_is_confirmed_only_if_economics_match():
-    out = event("out-1", TransactionType.TRANSFER_OUT, "Banco A", transfer_id="move-1")
-    incoming = event("in-1", TransactionType.TRANSFER_IN, "Banco B", transfer_id="move-1")
+    out = event("out-1", TransactionType.TRANSFER_OUT, "Banco A", day=4, transfer_id="move-1")
+    incoming = event("in-1", TransactionType.TRANSFER_IN, "Banco B", day=20, transfer_id="move-1")
     result = reconcile_transfers([out, incoming])
     assert len(result.confirmed_pairs) == 1
     assert result.invalid_transfer_ids == ()
