@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+venv
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.DS_Store
+*.py[cod]
+
+# Personal/financial data and local state
+portfolio.json
+data/
+backups/
+imports/
+*.db
+*.sqlite
+*.backup
+.env
+.streamlit/secrets.toml
