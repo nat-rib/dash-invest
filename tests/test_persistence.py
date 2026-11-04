@@ -116,3 +116,22 @@ def test_transfer_event_round_trips_pairing_reference(database):
     repo = TransactionRepository(database)
     repo.append(transaction)
     assert repo.get("transfer-in").transfer_id == "move-123"
+
+
+def test_transaction_timestamps_are_stored_and_sorted_as_utc(database):
+    PortfolioRepository(database).save(Portfolio(id="main", name="Principal"))
+    repo = TransactionRepository(database)
+    later_instant = Transaction(
+        id="later", portfolio_id="main", transaction_type=TransactionType.DEPOSIT,
+        occurred_at=datetime.fromisoformat("2026-11-04T12:00:00-03:00"),
+        institution="Banco", amount=Decimal("10"), currency="BRL",
+    )
+    earlier_instant = Transaction(
+        id="earlier", portfolio_id="main", transaction_type=TransactionType.DEPOSIT,
+        occurred_at=datetime.fromisoformat("2026-11-04T13:00:00+00:00"),
+        institution="Banco", amount=Decimal("10"), currency="BRL",
+    )
+    repo.append(later_instant)
+    repo.append(earlier_instant)
+    assert [tx.id for tx in repo.list_for_portfolio("main")] == ["earlier", "later"]
+    assert repo.get("later").occurred_at == datetime.fromisoformat("2026-11-04T15:00:00+00:00")

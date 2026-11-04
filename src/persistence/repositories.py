@@ -3,12 +3,17 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
 from src.domain.models import Instrument, Portfolio, PortfolioPosition, Transaction
 from src.persistence.database import SQLiteDatabase
+
+
+def _utc_iso(value: datetime) -> str:
+    """Normaliza instantes para UTC, permitindo ordenação textual correta."""
+    return value.astimezone(timezone.utc).isoformat()
 
 
 def _json_dump(value: Any) -> str:
@@ -166,7 +171,7 @@ class TransactionRepository:
                        transfer_id, external_id, notes, metadata_json
                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (transaction.id, transaction.portfolio_id, transaction.transaction_type.value,
-                 transaction.occurred_at.isoformat(), transaction.institution, transaction.instrument_id,
+                 _utc_iso(transaction.occurred_at), transaction.institution, transaction.instrument_id,
                  str(transaction.quantity) if transaction.quantity is not None else None,
                  str(transaction.unit_price) if transaction.unit_price is not None else None,
                  str(transaction.amount) if transaction.amount is not None else None,
@@ -192,10 +197,10 @@ class TransactionRepository:
             parameters.append(instrument_id)
         if start is not None:
             query += " AND occurred_at >= ?"
-            parameters.append(start.isoformat())
+            parameters.append(_utc_iso(start))
         if end is not None:
             query += " AND occurred_at <= ?"
-            parameters.append(end.isoformat())
+            parameters.append(_utc_iso(end))
         query += " ORDER BY occurred_at, id"
         with self.database.connection() as connection:
             rows = connection.execute(query, parameters).fetchall()
