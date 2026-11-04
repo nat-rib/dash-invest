@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import streamlit as st
 import plotly.express as px
 from src.importer import load_snapshot
@@ -7,7 +8,7 @@ from src.portfolio import brl_frame, consolidated_total, positions_frame
 st.set_page_config(page_title="Análise", page_icon="◔", layout="wide")
 st.title("Análise")
 st.caption("Um único snapshot descreve a carteira atual; não permite reconstruir desempenho histórico, TWR ou XIRR.")
-path = Path("portfolio.json")
+path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 if not path.exists(): st.info("Importe uma carteira primeiro."); st.stop()
 try: frame = positions_frame(load_snapshot(path))
 except Exception as error: st.error(str(error)); st.stop()
