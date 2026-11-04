@@ -46,11 +46,20 @@ class PerformanceResult:
     end_date: date
 
 
-def external_cash_flows(transactions: Iterable[Transaction]) -> tuple[DatedCashFlow, ...]:
-    """Converte somente aportes/retiradas em fluxos externos do investidor."""
+def external_cash_flows(
+    transactions: Iterable[Transaction], *, currency: str | None = None,
+) -> tuple[DatedCashFlow, ...]:
+    """Converte aportes/retiradas; rejeita mistura cambial sem FX explícito."""
     flows: list[DatedCashFlow] = []
+    currencies: set[str] = set()
     for tx in transactions:
-        if tx.transaction_type == TransactionType.DEPOSIT:
+        if tx.transaction_type in {TransactionType.DEPOSIT, TransactionType.WITHDRAWAL}:
+            currencies.add(tx.currency)
+            if currency is not None and tx.currency != currency.upper():
+                raise ValueError(
+                    f"Fluxo em {tx.currency} não pode ser combinado com valores em {currency.upper()} sem FX explícito."
+                )
+        if tx.transaction_type == TransactionType.DEPOSIT:"
             assert tx.amount is not None
             flows.append(DatedCashFlow(tx.occurred_at.date(), -tx.amount))
         elif tx.transaction_type == TransactionType.WITHDRAWAL:
@@ -58,6 +67,8 @@ def external_cash_flows(transactions: Iterable[Transaction]) -> tuple[DatedCashF
             flows.append(DatedCashFlow(tx.occurred_at.date(), tx.amount))
         # Transferências internas, proventos, juros, impostos e taxas não são
         # fluxos externos do investidor para a carteira consolidada.
+    if currency is None and len(currencies) > 1:
+        raise ValueError("Fluxos em moedas diferentes exigem conversão cambial explícita.")
     return tuple(sorted(flows, key=lambda flow: flow.date))
 
 
