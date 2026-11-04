@@ -4,7 +4,7 @@
 
 - O GitHub Actions executa os testes e publica a imagem em `ghcr.io/nat-rib/dash-invest`.
 - O container roda sem root (UID/GID 10001), com filesystem somente leitura e limite de 768 MB de RAM.
-- O JSON da carteira, o SQLite e os secrets ficam em `/opt/personal-cloud/data/dash-invest`, fora da imagem e do repositório.
+- Carteira, histórico SQLite e secrets ficam em `/opt/personal-cloud/data/dash-invest`, fora da imagem e do repositório.
 - A porta do host é publicada somente em `127.0.0.1:8501`. Não abra a porta 8501 no firewall e não publique em `0.0.0.0`.
 
 ## 1. Publicar a imagem
@@ -21,16 +21,16 @@ Entre por SSH via Tailscale:
 ssh deploy@100.104.34.5
 ```
 
-Clone o repositório (público) e execute o instalador:
+Clone o repositório e execute o instalador:
 
 ```bash
 cd ~
 git clone --branch develop https://github.com/nat-rib/dash-invest.git
 cd dash-invest
-bash bash ./deploy/install.sh
+bash ./deploy/install.sh
 ```
 
-O instalador cria os diretórios persistentes em `/opt/personal-cloud/data/dash-invest`, inicializa a carteira com dados fictícios de exemplo se ainda não existir, ajusta permissões para o usuário não-root do container e sobe a imagem.
+O instalador cria os diretórios persistentes, inicializa a carteira com dados fictícios de exemplo se ainda não existir, ajusta as permissões para o usuário não-root do container e sobe a imagem.
 
 O instalador adiciona `deploy` ao grupo GID 10001 para permitir administrar os arquivos persistentes. Encerre e abra novamente a sessão SSH para a nova associação de grupo valer.
 
@@ -54,7 +54,7 @@ O workflow publica a nova imagem automaticamente, mas o primeiro deploy é manua
 ```bash
 cd ~/dash-invest
 git pull --ff-only
-./deploy/install.sh
+bash ./deploy/install.sh
 ```
 
 O script preserva a carteira, o banco SQLite e os secrets existentes.
@@ -65,7 +65,7 @@ O script preserva a carteira, o banco SQLite e os secrets existentes.
 - Histórico SQLite: `/opt/personal-cloud/data/dash-invest/portfolio_history.db`
 - Secrets Streamlit: `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml`
 
-O instalador cria uma carteira de exemplo somente se o arquivo ainda não existir. Importe seu JSON real pela própria página **Importação**. Não copie dados financeiros para o repositório.
+O instalador cria uma carteira de exemplo somente se o arquivo ainda não existir. Importe seu JSON real pela página **Importação**. Não copie dados financeiros para o repositório.
 
 Se for usar Alpha Vantage, copie `.streamlit/secrets.example.toml` para `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml` e substitua o valor de exemplo pela sua chave. Nunca coloque a chave no Git. Reinicie o container após alterar:
 
