@@ -133,17 +133,19 @@ def calculate_xirr(
     if any(flow.date > terminal_date for flow in flows):
         raise ValueError("Há fluxo posterior à data terminal.")
     flows.sort(key=lambda item: item.date)
-    if len({flow.date for flow in flows}) < 2:
-        raise ValueError("XIRR requer ao menos duas datas distintas.")
     amounts = [flow.amount for flow in flows]
     if not any(amount < 0 for amount in amounts) or not any(amount > 0 for amount in amounts):
         raise ValueError("XIRR requer ao menos um fluxo positivo e um negativo.")
+    if len({flow.date for flow in flows}) < 2:
+        raise ValueError("XIRR requer ao menos duas datas distintas.")
 
     numeric = [(flow.date, float(flow.amount)) for flow in flows]
     # XIRR pode ter mais de uma raiz quando há múltiplas mudanças de sinal.
-    # Procuramos brackets em uma malha ampla e recusamos soluções ambíguas.
-    grid = [-0.9999, -0.99, -0.9, -0.75, -0.5, -0.25, 0.0, 0.1, 0.25, 0.5,
-            1.0, 2.0, 5.0, 10.0, 25.0, 50.0, 100.0, 500.0, 1000.0]
+    # Uma malha logarítmica densa cobre taxas próximas de -100% e taxas elevadas.
+    grid = [
+        1e-4 * (1001.0 / 1e-4) ** (index / 4096) - 1.0
+        for index in range(4097)
+    ]
     brackets: list[tuple[float, float]] = []
     previous_rate = grid[0]
     previous_npv = _npv(previous_rate, numeric)
