@@ -131,8 +131,14 @@ def reconcile_transfers(
     for event_id, pairs in candidates.items():
         if len(pairs) > 1:
             ambiguous.add(event_id)
+            for pair in pairs:
+                ambiguous.add(
+                    pair.transfer_in_id if event_id == pair.transfer_out_id else pair.transfer_out_id
+                )
     for pair in (p for pairs in candidates.values() for p in pairs):
         if pair in suggested:
+            continue
+        if pair.transfer_out_id in ambiguous or pair.transfer_in_id in ambiguous:
             continue
         if len(candidates[pair.transfer_out_id]) == 1 and len(candidates[pair.transfer_in_id]) == 1:
             suggested.append(pair)
