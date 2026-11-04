@@ -7,6 +7,10 @@ on:
     branches: [develop, main]
   workflow_dispatch:
 
+concurrency:
+  group: dash-invest-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
