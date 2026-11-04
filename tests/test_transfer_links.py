@@ -54,5 +54,7 @@ def test_transfer_confirmation_is_unique_and_idempotent(repositories):
     transactions.append_many([out, incoming])
     first = links.confirm(out.id, incoming.id)
     assert links.confirm(out.id, incoming.id) == first
+    second_incoming = _transfer("in-2", TransactionType.TRANSFER_IN, "Broker C")
+    transactions.append(second_incoming)
     with pytest.raises(ValueError, match="já está associado"):
-        links.confirm(out.id, "in-1")
+        links.confirm(out.id, second_incoming.id)
