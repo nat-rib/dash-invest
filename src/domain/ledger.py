@@ -119,7 +119,7 @@ def rebuild_position(
                 realized_profit = None
             quantity -= tx.quantity
             if quantity == 0:
-                cost_basis = Decimal("0") if cost_basis is not None else None
+                cost_basis = Decimal("0")
 
         elif tx.transaction_type == TransactionType.TRANSFER_OUT:
             assert tx.quantity is not None and tx.amount is not None

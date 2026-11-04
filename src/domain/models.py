@@ -109,7 +109,7 @@ class Transaction(DomainModel):
     instrument_id: str | None = None
     quantity: Decimal | None = Field(default=None, gt=0)
     unit_price: Decimal | None = Field(default=None, ge=0)
-    amount: Decimal | None = Field(default=None, gt=0)
+    amount: Decimal | None = Field(default=None, ge=0)
     currency: str = Field(min_length=3, max_length=3)
     fees: Decimal = Field(default=Decimal("0"), ge=0)
     taxes: Decimal = Field(default=Decimal("0"), ge=0)
@@ -143,8 +143,10 @@ class Transaction(DomainModel):
         if self.transaction_type in trade_types:
             if not self.instrument_id or self.quantity is None or self.unit_price is None:
                 raise ValueError("BUY/SELL exigem instrument_id, quantity e unit_price.")
-        if self.transaction_type in cash_types and self.amount is None:
-            raise ValueError(f"{self.transaction_type.value} exige amount.")
+        if self.transaction_type in cash_types and (self.amount is None or self.amount <= 0):
+            raise ValueError(f"{self.transaction_type.value} exige amount positivo.")
+        if self.transaction_type in trade_types and self.amount is not None and self.amount <= 0:
+            raise ValueError("BUY/SELL amount deve ser positivo quando informado.")
         if self.transaction_type == TransactionType.SPLIT:
             if not self.instrument_id:
                 raise ValueError("SPLIT exige instrument_id.")
@@ -164,6 +166,8 @@ class Transaction(DomainModel):
                 raise ValueError("Transferências internas exigem transfer_id.")
             if self.amount is None:
                 raise ValueError("Transferências exigem amount (valor em dinheiro ou custo transferido).")
+            if self.instrument_id is None and self.amount <= 0:
+                raise ValueError("Transferência em dinheiro exige amount positivo.")
             if self.instrument_id is not None and self.quantity is None:
                 raise ValueError("Transferência de ativo exige quantity.")
             if self.instrument_id is None and self.quantity is not None:

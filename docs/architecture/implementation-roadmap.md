@@ -36,8 +36,8 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - [x] Adaptador explícito de snapshot JSON para instrumentos/posições, sem inventar transações.
 - [ ] Migração do snapshot JSON para cadastro/posições sem perder compatibilidade.
 - [ ] Importação e reconciliação de transações.
-- [ ] Eventos de proventos, juros, amortizações, splits, bonificações e transferências.
-- [ ] Reconstrução de posições e custo a partir do ledger.
+- [ ] Eventos de proventos, juros, amortizações, splits, bonificações e transferências. Transferência de ativo carrega custo contábil; split usa fator em metadata.ratio.
+- [x] Reconstrução de posições e custo a partir do ledger para compras, vendas, transferências de ativos, splits, bonificações e amortizações.
 - [ ] Cálculo TWR e XIRR após validação dos fluxos.
 
 **Aceite:** transferências internas não alteram aportes/retiradas externos; proventos não duplicam; splits preservam valor econômico; TWR trata fluxos externos; XIRR usa datas reais; snapshots legados não viram transações fictícias.

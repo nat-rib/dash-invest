@@ -121,3 +121,14 @@ def test_split_requires_positive_ratio_and_asset_transfer_requires_cost_basis():
         _tx("split", TransactionType.SPLIT)
     with pytest.raises(ValidationError, match="amount"):
         _tx("transfer", TransactionType.TRANSFER_IN, quantity=Decimal("1"), transfer_id="move")
+
+
+def test_asset_transfer_can_preserve_zero_cost_basis():
+    result = rebuild_position(
+        portfolio_id="main", instrument_id="asset-1", institution="Broker B",
+        transactions=[_tx("in", TransactionType.TRANSFER_IN, institution="Broker B",
+                          quantity=Decimal("3"), amount=Decimal("0"), transfer_id="gift-1")],
+    )
+    assert result.position.quantity == Decimal("3")
+    assert result.cost_basis == Decimal("0")
+    assert result.position.average_cost == Decimal("0")
