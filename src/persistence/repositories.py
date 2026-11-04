@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -260,3 +261,94 @@ class TransactionRepository:
         with self.database.connection() as connection:
             rows = connection.execute(query, parameters).fetchall()
         return [_transaction_from_row(row) for row in rows]
+
+
+@dataclass(frozen=True)
+class TransferLink:
+    transfer_out_id: str
+    transfer_in_id: str
+    portfolio_id: str
+    linked_at: datetime
+    confirmation_source: str = "manual"
+
+
+class TransferLinkRepository:
+    """Associa pontas de transferência sem editar os eventos imutáveis do ledger."""
+
+    def __init__(self, database: SQLiteDatabase):
+        self.database = database
+
+    def confirm(
+        self, transfer_out_id: str, transfer_in_id: str, *,
+        confirmation_source: str = "manual",
+    ) -> TransferLink:
+        if transfer_out_id == transfer_in_id:
+            raise ValueError("As pontas da transferência precisam ser eventos distintos.")
+        with self.database.transaction() as connection:
+            rows = connection.execute(
+                "SELECT * FROM transactions WHERE id IN (?, ?)",
+                (transfer_out_id, transfer_in_id),
+            ).fetchall()
+            by_id = {row["id"]: row for row in rows}
+            if transfer_out_id not in by_id or transfer_in_id not in by_id:
+                raise ValueError("Uma das transações não existe.")
+            outbound, incoming = by_id[transfer_out_id], by_id[transfer_in_id]
+            if outbound["transaction_type"] != "TRANSFER_OUT":
+                raise ValueError("A primeira transação precisa ser TRANSFER_OUT.")
+            if incoming["transaction_type"] != "TRANSFER_IN":
+                raise ValueError("A segunda transação precisa ser TRANSFER_IN.")
+            if outbound["portfolio_id"] != incoming["portfolio_id"]:
+                raise ValueError("As transações pertencem a carteiras diferentes.")
+            if outbound["institution"].casefold() == incoming["institution"].casefold():
+                raise ValueError("As instituições precisam ser diferentes.")
+            if outbound["currency"] != incoming["currency"]:
+                raise ValueError("As moedas precisam ser iguais; conversões exigem conciliação própria.")
+            if outbound["instrument_id"] != incoming["instrument_id"]:
+                raise ValueError("As transferências precisam referenciar o mesmo instrumento.")
+
+            existing = connection.execute(
+                """SELECT * FROM transfer_links
+                   WHERE transfer_out_id = ? OR transfer_in_id IN (?, ?)""",
+                (transfer_out_id, transfer_out_id, transfer_in_id),
+            ).fetchall()
+            if existing:
+                exact = next((
+                    row for row in existing
+                    if row["transfer_out_id"] == transfer_out_id
+                    and row["transfer_in_id"] == transfer_in_id
+                ), None)
+                if exact:
+                    return TransferLink(
+                        exact["transfer_out_id"], exact["transfer_in_id"],
+                        exact["portfolio_id"], datetime.fromisoformat(exact["linked_at"]),
+                        exact["confirmation_source"],
+                    )
+                raise ValueError("Uma das pontas já está associada a outra transferência.")
+
+            linked_at = datetime.now(timezone.utc)
+            connection.execute(
+                """INSERT INTO transfer_links (
+                       transfer_out_id, transfer_in_id, portfolio_id, linked_at, confirmation_source
+                   ) VALUES (?, ?, ?, ?, ?)""",
+                (transfer_out_id, transfer_in_id, outbound["portfolio_id"],
+                 linked_at.isoformat(), confirmation_source),
+            )
+        return TransferLink(
+            transfer_out_id, transfer_in_id, outbound["portfolio_id"],
+            linked_at, confirmation_source,
+        )
+
+    def list_for_portfolio(self, portfolio_id: str) -> list[TransferLink]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """SELECT * FROM transfer_links WHERE portfolio_id = ?
+                   ORDER BY linked_at, transfer_out_id""",
+                (portfolio_id,),
+            ).fetchall()
+        return [
+            TransferLink(
+                row["transfer_out_id"], row["transfer_in_id"], row["portfolio_id"],
+                datetime.fromisoformat(row["linked_at"]), row["confirmation_source"],
+            )
+            for row in rows
+        ]
