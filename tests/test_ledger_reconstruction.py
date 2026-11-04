@@ -132,3 +132,17 @@ def test_asset_transfer_can_preserve_zero_cost_basis():
     assert result.position.quantity == Decimal("3")
     assert result.cost_basis == Decimal("0")
     assert result.position.average_cost == Decimal("0")
+
+
+def test_opening_snapshot_rejects_transactions_on_or_before_its_date():
+    opening = PortfolioPosition(
+        portfolio_id="main", instrument_id="asset-1", institution="Broker",
+        quantity=Decimal("10"), average_cost=Decimal("10"),
+        cost_currency="BRL", as_of=date(2026, 11, 4),
+    )
+    with pytest.raises(ValueError, match="após a data"):
+        rebuild_position(
+            portfolio_id="main", instrument_id="asset-1", institution="Broker",
+            opening_position=opening,
+            transactions=[_tx("buy", TransactionType.BUY, quantity=Decimal("1"), unit_price=Decimal("10"))],
+        )

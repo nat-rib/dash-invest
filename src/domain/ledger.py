@@ -86,6 +86,8 @@ def rebuild_position(
     realized_profit: Decimal | None = Decimal("0") if cost_basis is not None else None
 
     for tx in ordered:
+        if opening_position is not None and tx.occurred_at.date() <= opening_position.as_of:
+            raise ValueError("Transações devem ocorrer após a data do snapshot de abertura.")
         if (tx.portfolio_id, tx.instrument_id, tx.institution) != (
             portfolio_id, instrument_id, institution
         ):
@@ -132,8 +134,10 @@ def rebuild_position(
                     raise ValueError("Custo transferido supera o custo contábil disponível.")
                 cost_basis -= tx.amount
             quantity -= tx.quantity
-            if quantity == 0 and cost_basis is not None and cost_basis != 0:
-                raise ValueError("Transferência total deve carregar todo o custo contábil remanescente.")
+            if quantity == 0:
+                if cost_basis is not None and cost_basis != 0:
+                    raise ValueError("Transferência total deve carregar todo o custo contábil remanescente.")
+                cost_basis = Decimal("0")
 
         elif tx.transaction_type == TransactionType.TRANSFER_IN:
             assert tx.quantity is not None and tx.amount is not None
