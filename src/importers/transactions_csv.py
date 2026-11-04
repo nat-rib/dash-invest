@@ -73,7 +73,7 @@ class CanonicalTransactionCsvImporter:
                     raise TransactionCsvImportError(
                         f"Linha {row_number}: external_id e institution são obrigatórios."
                     )
-                identity = (institution.casefold(), external_id)
+                identity = (institution, external_id)
                 if identity in seen_external_ids:
                     raise TransactionCsvImportError(
                         f"Linha {row_number}: external_id duplicado no próprio arquivo."
@@ -112,7 +112,7 @@ class CanonicalTransactionCsvImporter:
                 transaction = Transaction(
                     id=str(uuid5(
                         NAMESPACE_URL,
-                        f"dash-invest:csv:{portfolio_id}:{institution.casefold()}:{external_id}",
+                        f"dash-invest:csv:{portfolio_id}:{institution}:{external_id}",
                     )),
                     portfolio_id=portfolio_id,
                     transaction_type=transaction_type,
