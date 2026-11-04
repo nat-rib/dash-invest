@@ -45,7 +45,14 @@ def test_external_cash_flows_exclude_transfers_and_income():
                     instrument_id="PETR4", **base),
         Transaction(transaction_type=TransactionType.DIVIDEND, amount=Decimal("10"), **base),
     ]
-    assert [f.amount for f in external_cash_flows(transactions)] == [Decimal("-100"), Decimal("25")]
+    assert [f.amount for f in external_cash_flows(transactions, currency="BRL")] == [Decimal("-100"), Decimal("25")]
+    foreign = Transaction(
+        transaction_type=TransactionType.DEPOSIT, amount=Decimal("10"),
+        portfolio_id="main", occurred_at=datetime(2025, 1, 2, tzinfo=timezone.utc),
+        institution="Broker", currency="USD",
+    )
+    with pytest.raises(ValueError, match="moedas diferentes"):
+        external_cash_flows([transactions[0], foreign])
 
 
 def test_xirr_one_year_known_result():
