@@ -9,6 +9,8 @@ services:
       - "127.0.0.1:8501:8501"
     environment:
       TZ: America/Sao_Paulo
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
     volumes:
       - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/portfolio.json:/app/portfolio.json
       - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/data:/app/data
