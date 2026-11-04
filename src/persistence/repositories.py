@@ -156,7 +156,7 @@ class PortfolioPositionRepository:
         connection.execute(
                 """INSERT INTO portfolio_positions (
                        portfolio_id, instrument_id, institution, quantity,
-                       average_cost, cost_currency, as_of
+                       average_cost, cost_currency, as_of, metadata_json
                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(portfolio_id, instrument_id, institution, as_of)
                    DO UPDATE SET quantity=excluded.quantity,
@@ -167,7 +167,6 @@ class PortfolioPositionRepository:
                  str(position.average_cost) if position.average_cost is not None else None,
                  position.cost_currency, position.as_of.isoformat(), _json_dump(position.metadata)),
             )
-        return position
 
     def list_snapshots(self, portfolio_id: str, as_of: date | None = None) -> list[PortfolioPosition]:
         query = "SELECT * FROM portfolio_positions WHERE portfolio_id = ?"
