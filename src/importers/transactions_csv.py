@@ -8,7 +8,7 @@ from __future__ import annotations
 import csv
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from io import StringIO
 from uuid import NAMESPACE_URL, uuid5
@@ -116,7 +116,7 @@ class CanonicalTransactionCsvImporter:
                     )),
                     portfolio_id=portfolio_id,
                     transaction_type=transaction_type,
-                    occurred_at=occurred_at,
+                    occurred_at=occurred_at.astimezone(timezone.utc),
                     sequence=sequence,
                     institution=institution,
                     instrument_id=_optional_text(row, "instrument_id"),
