@@ -33,7 +33,7 @@ def _economically_compatible(
     *,
     amount_tolerance: Decimal,
     quantity_tolerance: Decimal,
-    date_window: timedelta,
+    date_window: timedelta | None,
 ) -> bool:
     if outbound.transaction_type != TransactionType.TRANSFER_OUT:
         return False
@@ -45,7 +45,7 @@ def _economically_compatible(
         return False
     if outbound.currency != inbound.currency or outbound.instrument_id != inbound.instrument_id:
         return False
-    if abs(outbound.occurred_at - inbound.occurred_at) > date_window:
+    if date_window is not None and abs(outbound.occurred_at - inbound.occurred_at) > date_window:
         return False
     if outbound.amount is None or inbound.amount is None:
         return False
@@ -94,7 +94,7 @@ def reconcile_transfers(
             if _economically_compatible(
                 out, incoming, amount_tolerance=amount_tolerance,
                 quantity_tolerance=quantity_tolerance,
-                date_window=timedelta(days=date_window_days),
+                date_window=None,
             ):
                 confirmed.append(TransferPair(
                     out.id, incoming.id, abs(out.occurred_at - incoming.occurred_at),
