@@ -13,6 +13,8 @@ from src.persistence.database import SQLiteDatabase
 
 def _utc_iso(value: datetime) -> str:
     """Normaliza instantes para UTC, permitindo ordenação textual correta."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("Filtros de data devem incluir timezone.")
     return value.astimezone(timezone.utc).isoformat()
 
 

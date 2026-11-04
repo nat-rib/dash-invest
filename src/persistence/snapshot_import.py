@@ -15,7 +15,7 @@ from src.persistence.database import SQLiteDatabase
 from src.persistence.repositories import (
     InstrumentRepository, PortfolioPositionRepository, PortfolioRepository,
 )
-from src.schemas import PortfolioSnapshot
+from src.schemas import PortfolioSnapshot, Position
 
 
 _LEGACY_ASSET_CLASSES = {
@@ -40,7 +40,7 @@ class SnapshotImportResult:
     transactions_created: int = 0
 
 
-def _instrument_for_position(position) -> Instrument:
+def _instrument_for_position(position: Position) -> Instrument:
     legacy_class = str(position.asset_class)
     asset_class = _LEGACY_ASSET_CLASSES.get(legacy_class, AssetClass.OTHER)
     identity = position.market_symbol or position.ticker or position.name

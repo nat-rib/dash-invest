@@ -65,3 +65,21 @@ def test_same_instrument_across_institutions_has_one_catalog_entry(tmp_path):
     petr_positions = [position for position in positions if position.instrument_id == petr.id]
     assert len(petr_positions) == 2
     assert {position.institution for position in petr_positions} == {"Corretora A", "Corretora B"}
+
+
+def test_snapshot_import_rolls_back_everything_on_conflicting_positions(tmp_path):
+    import pytest
+    import sqlite3
+
+    database = SQLiteDatabase(tmp_path / "atomic.db")
+    database.initialize()
+    snapshot = _snapshot()
+    duplicate = snapshot.positions[0].model_copy()
+    snapshot = snapshot.model_copy(update={"positions": [snapshot.positions[0], duplicate]})
+
+    with pytest.raises(sqlite3.IntegrityError):
+        PortfolioSnapshotImporter(database).import_snapshot(snapshot)
+
+    assert PortfolioRepository(database).list_all() == []
+    assert InstrumentRepository(database).list_all() == []
+    assert PortfolioPositionRepository(database).list_snapshots("legacy-import") == []
