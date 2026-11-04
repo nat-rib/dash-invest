@@ -6,6 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from src.domain.models import AssetClass, Instrument
 from src.domain.reconciliation import reconcile_transfers
 from src.importers.broker_csv import BrokerCsvMapping, adapt_broker_csv
 from src.importers.transactions_csv import CanonicalTransactionCsvImporter
@@ -92,9 +93,38 @@ with tab_csv:
                 st.stop()
             st.caption(f"{len(rows)} linhas encontradas.")
             st.dataframe(rows[:10], use_container_width=True, hide_index=True)
+            with st.expander("Cadastrar instrumento que ainda não existe no catálogo"):
+                new_ticker = st.text_input("Ticker / código externo", key="new_instrument_ticker")
+                new_name = st.text_input("Nome do ativo", key="new_instrument_name")
+                new_class = st.selectbox("Classe do ativo", list(AssetClass), format_func=lambda item: item.value, key="new_instrument_class")
+                new_currency = st.selectbox("Moeda do ativo", ["BRL", "USD", "EUR", "GBP", "JPY"], key="new_instrument_currency")
+                if st.button("Cadastrar instrumento", key="create_instrument"):
+                    if not new_ticker.strip() or not new_name.strip():
+                        st.error("Informe ticker e nome.")
+                    else:
+                        try:
+                            duplicate = any(
+                                new_ticker.strip().casefold() in {
+                                    value.casefold() for value in item.provider_symbols.values()
+                                }
+                                for item in instruments.list_all()
+                            )
+                            if duplicate:
+                                st.error("Já existe um instrumento com esse ticker em algum provedor.")
+                            else:
+                                instruments.save(Instrument(
+                                    name=new_name.strip(), asset_class=new_class,
+                                    currency=new_currency,
+                                    provider_symbols={"broker_ticker": new_ticker.strip()},
+                                ))
+                                st.success("Instrumento cadastrado. Atualize a página para associá-lo ao extrato.")
+                                st.rerun()
+                        except Exception as error:
+                            st.error(f"Não foi possível cadastrar: {error}")
+
             inst_list = instruments.list_all()
             if not inst_list:
-                st.warning("Migre primeiro o portfolio.json para criar o catálogo de instrumentos.")
+                st.warning("Cadastre ou migre instrumentos antes de importar compras/vendas.")
             labels = {
                 f"{item.name} · {item.asset_class.value} · {item.currency} · {item.id[:8]}": item.id
                 for item in inst_list
