@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import streamlit as st
 from src.importer import replace_snapshot, validate_json, validation_messages
 from src.portfolio import duplicate_positions, positions_frame
@@ -24,5 +25,5 @@ st.subheader("Prévia")
 st.dataframe(positions_frame(snapshot), use_container_width=True, hide_index=True)
 confirm = st.checkbox("Confirmo que desejo substituir a carteira exibida atualmente.")
 if st.button("Substituir carteira", type="primary", disabled=not confirm):
-    replace_snapshot(Path("portfolio.json"), uploaded.getvalue())
+    replace_snapshot(Path(os.getenv("PORTFOLIO_PATH", "portfolio.json")), uploaded.getvalue())
     st.success("Carteira substituída com sucesso.")
