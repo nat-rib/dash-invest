@@ -24,6 +24,10 @@ class TwrPeriod:
     net_external_flow: Decimal = Decimal("0")
 
     def __post_init__(self) -> None:
+        if not all(value.is_finite() for value in (
+            self.start_value, self.end_value_after_flows, self.net_external_flow,
+        )):
+            raise ValueError("Valores TWR precisam ser decimais finitos.")
         if self.end_date <= self.start_date:
             raise ValueError("O fim do período deve ser posterior ao início.")
         if self.start_value <= 0:
