@@ -14,7 +14,7 @@ st.title("Cotações e histórico")
 st.caption("Fonte: Alpha Vantage. Apenas símbolos de negociação são enviados ao provedor; saldos, quantidades e instituições permanecem locais.")
 st.info("Chaves gratuitas têm limite de 25 consultas por dia. O painel espera automaticamente entre consultas; atualize somente os ativos necessários.")
 
-path = Path("portfolio.json")
+path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 if not path.exists():
     st.info("Importe uma carteira primeiro.")
     st.stop()
