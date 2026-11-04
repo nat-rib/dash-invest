@@ -29,7 +29,7 @@ O workflow usa a action oficial `tailscale/github-action@v4`, autentica um runne
 
 ## 2. Pré-requisitos na VPS
 
-A VPS precisa estar com Docker Engine + Compose instalados, Tailscale conectado e o usuário `deploy` com sudo. O workflow faz o primeiro clone do repositório e executa o instalador automaticamente após o primeiro merge em `main`.
+A VPS precisa estar com Docker Engine + Compose instalados, Tailscale conectado e o usuário `deploy` com acesso ao Docker sem sudo (por exemplo, grupo `docker`). O primeiro deploy também exige `sudo -n true` e permissões administrativas sem senha para o instalador preparar o grupo/UID/GID 10001 e os diretórios persistentes. O workflow faz um preflight SSH/Docker/sudo antes de clonar ou alterar o serviço.
 
 O workflow usa o `GITHUB_TOKEN` com permissão de leitura para autenticar temporariamente no GHCR durante cada deploy e faz logout ao terminar. Não é necessário tornar o pacote público nem guardar um PAT permanente no servidor.
 
@@ -49,7 +49,8 @@ Não configure Funnel, não crie regra pública para a porta 8501 e não altere 
 ## 4. Dados persistentes
 
 - Carteira: `/opt/personal-cloud/data/dash-invest/portfolio.json`
-- Histórico SQLite: `/opt/personal-cloud/data/dash-invest/portfolio_history.db`
+- Histórico legado: `/opt/personal-cloud/data/dash-invest/portfolio_history.db`
+- Ledger SQLite: `/opt/personal-cloud/data/dash-invest/dash_invest.db`
 - Secrets Streamlit: `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml`
 
 O banco SQLite usa `HISTORY_DB_PATH=/app/data/portfolio_history.db`, portanto permanece no volume persistente mesmo com o filesystem do container em modo somente leitura.
@@ -59,6 +60,8 @@ O instalador cria uma carteira de exemplo somente se o arquivo ainda não existi
 Se for usar Alpha Vantage, copie `.streamlit/secrets.example.toml` para `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml` e substitua o valor de exemplo pela sua chave. Nunca coloque a chave no Git.
 
 ## 5. Atualizações e diagnóstico
+
+Antes de atualizar, a esteira pausa o container para criar um backup consistente do diretório de dados em `/opt/personal-cloud/data/dash-invest-backups`, mantendo os sete backups mais recentes. Depois do deploy, aguarda o healthcheck; se a imagem nova não ficar saudável, tenta voltar à imagem anterior. O rollback automático cobre a imagem/container, não substitui o procedimento de restauração manual de dados.
 
 A partir daí, o deploy é automático ao integrar alterações em `main`. Para verificar:
 

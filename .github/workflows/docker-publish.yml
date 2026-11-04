@@ -32,6 +32,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Compile application modules
+        run: python -m compileall -q app.py pages src
+
+      - name: Validate deployment installer syntax
+        run: bash -n deploy/install.sh
+
       - name: Run tests
         run: python -m pytest -q
 
@@ -102,6 +108,14 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 100.104.34.5 >> ~/.ssh/known_hosts
 
+      - name: Preflight VPS access
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            deploy@100.104.34.5 \
+            'set -e; docker info >/dev/null; sudo -n true'
+
       - name: Authenticate to GHCR on VPS and deploy
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,8 +130,34 @@ jobs:
             -o IdentitiesOnly=yes \
             deploy@100.104.34.5 \
             'set -Eeuo pipefail
-             trap "docker logout ghcr.io >/dev/null 2>&1 || true" EXIT
-             if [ ! -f /opt/personal-cloud/apps/dash-invest/compose.yaml ]; then
+             APP_DIR=/opt/personal-cloud/apps/dash-invest
+             DATA_DIR=/opt/personal-cloud/data/dash-invest
+             BACKUP_DIR=/opt/personal-cloud/data/dash-invest-backups
+             sudo -n install -d -m 700 -o deploy -g deploy "$BACKUP_DIR"
+             BACKUP_STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+             PREVIOUS_IMAGE=$(docker inspect -f "{{.Image}}" dash-invest 2>/dev/null || true)
+             WAS_PAUSED=0
+             if docker inspect dash-invest >/dev/null 2>&1; then
+               docker pause dash-invest >/dev/null
+               WAS_PAUSED=1
+             fi
+             trap "if [ \"$WAS_PAUSED\" = 1 ]; then docker unpause dash-invest >/dev/null 2>&1 || true; fi" EXIT
+             if [ -d "$DATA_DIR" ]; then
+               sudo -n tar -czf "$BACKUP_DIR/$BACKUP_STAMP.tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
+               sudo -n chown deploy:deploy "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+               chmod 600 "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+             fi
+             if [ "$WAS_PAUSED" = 1 ]; then
+               docker unpause dash-invest >/dev/null
+               WAS_PAUSED=0
+             fi
+             trap - EXIT
+             backup_files=$(ls -1t "$BACKUP_DIR"/*.tar.gz 2>/dev/null || true)
+             printf "%s\n" "$backup_files" | tail -n +8 | while IFS= read -r old; do
+               [ -n "$old" ] && rm -f "$old"
+             done
+
+             if [ ! -f "$APP_DIR/compose.yaml" ]; then
                if [ -d /home/deploy/dash-invest/.git ]; then
                  cd /home/deploy/dash-invest
                  git fetch origin main
@@ -128,7 +168,32 @@ jobs:
                cd /home/deploy/dash-invest
                IMAGE_TAG=latest bash ./deploy/install.sh
              else
-               cd /opt/personal-cloud/apps/dash-invest
+               cd "$APP_DIR"
                IMAGE_TAG=latest docker compose pull
                IMAGE_TAG=latest docker compose up -d --remove-orphans
-             fi'
+             fi
+
+             HEALTH=starting
+             for attempt in $(seq 1 30); do
+               HEALTH=$(docker inspect -f "{{.State.Health.Status}}" dash-invest 2>/dev/null || echo missing)
+               if [ "$HEALTH" = healthy ]; then
+                 echo "Deploy saudável. Backup: $BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+                 exit 0
+               fi
+               if [ "$HEALTH" = unhealthy ] || [ "$HEALTH" = missing ]; then
+                 break
+               fi
+               sleep 3
+             done
+
+             echo "Healthcheck falhou (status: $HEALTH). Tentando rollback."
+             if [ -n "$PREVIOUS_IMAGE" ]; then
+               docker tag "$PREVIOUS_IMAGE" ghcr.io/nat-rib/dash-invest:rollback
+               cd "$APP_DIR"
+               IMAGE_TAG=rollback docker compose up -d --remove-orphans
+               echo "Rollback solicitado para imagem $PREVIOUS_IMAGE."
+             else
+               docker compose -f "$APP_DIR/compose.yaml" down || true
+               echo "Primeiro deploy falhou; serviço novo foi removido."
+             fi
+             exit 1'

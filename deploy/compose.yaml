@@ -10,7 +10,7 @@ services:
     environment:
       TZ: America/Sao_Paulo
       PORTFOLIO_PATH: /app/data/portfolio.json
-      HISTORY_DB_PATH: /app/data/portfolio_history.db
+      HISTORY_DB_PATH: /app/data/portfolio_history.db\n      DASH_INVEST_DB_PATH: /app/data/dash_invest.db
       HOME: /tmp
       XDG_CACHE_HOME: /tmp/.cache
     volumes:
