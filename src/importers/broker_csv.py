@@ -145,11 +145,12 @@ def adapt_broker_csv(
         transaction_type = _type(get("transaction_type"), aliases, line)
         occurred_at = _date(get("occurred_at"), mapping, line)
         raw_instrument = get("instrument_id")
-        instrument_id = (
-            mapping.instrument_map.get(raw_instrument)
-            if mapping.instrument_map else (raw_instrument or None)
-        )
-        if transaction_type in {"BUY", "SELL", "BONUS", "SPLIT", "TRANSFER_IN", "TRANSFER_OUT"} and raw_instrument and not instrument_id:
+        instrument_id = mapping.instrument_map.get(raw_instrument) if raw_instrument else None
+        if raw_instrument and not instrument_id:
+            raise TransactionCsvImportError(
+                f"Linha {line}: associe o ativo {raw_instrument!r} a um instrumento do catálogo."
+            )
+        if transaction_type in {"BUY", "SELL", "BONUS", "SPLIT"} and not instrument_id:
             raise TransactionCsvImportError(
                 f"Linha {line}: associe o ativo {raw_instrument!r} a um instrumento do catálogo."
             )
