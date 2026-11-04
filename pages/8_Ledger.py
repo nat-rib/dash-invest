@@ -98,13 +98,16 @@ with tab_csv:
                 new_name = st.text_input("Nome do ativo", key="new_instrument_name")
                 new_class = st.selectbox("Classe do ativo", list(AssetClass), format_func=lambda item: item.value, key="new_instrument_class")
                 new_currency = st.selectbox("Moeda do ativo", ["BRL", "USD", "EUR", "GBP", "JPY"], key="new_instrument_currency")
+                new_exchange = st.text_input("Bolsa / mercado (opcional)", key="new_instrument_exchange")
                 if st.button("Cadastrar instrumento", key="create_instrument"):
                     if not new_ticker.strip() or not new_name.strip():
                         st.error("Informe ticker e nome.")
                     else:
                         try:
                             duplicate = any(
-                                new_ticker.strip().casefold() in {
+                                item.currency == new_currency and item.asset_class == new_class
+                                and (item.exchange or "").casefold() == new_exchange.strip().casefold()
+                                and new_ticker.strip().casefold() in {
                                     value.casefold() for value in item.provider_symbols.values()
                                 }
                                 for item in instruments.list_all()
@@ -114,7 +117,7 @@ with tab_csv:
                             else:
                                 instruments.save(Instrument(
                                     name=new_name.strip(), asset_class=new_class,
-                                    currency=new_currency,
+                                    currency=new_currency, exchange=new_exchange.strip() or None,
                                     provider_symbols={"broker_ticker": new_ticker.strip()},
                                 ))
                                 st.success("Instrumento cadastrado. Atualize a página para associá-lo ao extrato.")
