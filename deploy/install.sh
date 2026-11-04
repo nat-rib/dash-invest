@@ -11,7 +11,6 @@ if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>
 fi
 
 mkdir -p "$APP_DIR" "$DATA_DIR/data" "$DATA_DIR/.streamlit"
-chmod 700 "$DATA_DIR" "$DATA_DIR/data" "$DATA_DIR/.streamlit"
 
 if [[ ! -f "$DATA_DIR/portfolio.json" ]]; then
   cp "$REPO_DIR/portfolio.example.json" "$DATA_DIR/portfolio.json"
@@ -20,13 +19,18 @@ fi
 
 if [[ ! -f "$DATA_DIR/.streamlit/secrets.toml" ]]; then
   : > "$DATA_DIR/.streamlit/secrets.toml"
-  chmod 600 "$DATA_DIR/.streamlit/secrets.toml"
 fi
 
-# O processo dentro do container roda como UID/GID 10001.
+# O container usa UID/GID 10001. O usuário deploy recebe acesso via grupo.
+if ! getent group 10001 >/dev/null; then
+  sudo groupadd --system --gid 10001 dash-invest
+fi
+APP_GROUP="$(getent group 10001 | cut -d: -f1)"
+sudo usermod -aG "$APP_GROUP" deploy
 sudo chown -R 10001:10001 "$DATA_DIR"
-sudo chmod 600 "$DATA_DIR/portfolio.json" "$DATA_DIR/.streamlit/secrets.toml"
-sudo chmod 700 "$DATA_DIR" "$DATA_DIR/data" "$DATA_DIR/.streamlit"
+sudo find "$DATA_DIR" -type d -exec chmod 2770 {} +
+sudo find "$DATA_DIR" -type f -exec chmod 660 {} +
+sudo chmod 640 "$DATA_DIR/.streamlit/secrets.toml"
 
 install -m 640 "$REPO_DIR/deploy/compose.yaml" "$APP_DIR/compose.yaml"
 
@@ -40,4 +44,4 @@ echo "  docker compose -f $APP_DIR/compose.yaml ps"
 echo "  docker logs -f dash-invest"
 echo
 echo "A aplicação está publicada somente em 127.0.0.1:8501."
-echo "Depois configure o Tailscale Serve para acessá-la pela tailnet."
+echo "Configure o Tailscale Serve separadamente para acessá-la pela tailnet."
