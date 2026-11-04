@@ -35,7 +35,7 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - [x] Persistência SQLite versionada e repositórios.
 - [x] Adaptador explícito de snapshot JSON para instrumentos/posições, sem inventar transações.
 - [ ] Migração do snapshot JSON para cadastro/posições sem perder compatibilidade.
-- [ ] Importação e reconciliação de transações.
+- [x] Importação canônica CSV de transações, idempotente por instituição/external_id, com validação atômica do lote.\n- [x] Sugestão conservadora de pareamento de transferências; casos ambíguos e incompletos permanecem para confirmação humana.\n- [ ] Adaptadores CSV específicos de cada corretora e fluxo de revisão/confirmação na UI.
 - [ ] Eventos de proventos, juros, amortizações, splits, bonificações e transferências. Transferência de ativo carrega custo contábil; split usa fator em metadata.ratio.
 - [x] Reconstrução de posições e custo a partir do ledger para compras, vendas, transferências de ativos, splits, bonificações e amortizações.
 - [ ] Cálculo TWR e XIRR após validação dos fluxos.
