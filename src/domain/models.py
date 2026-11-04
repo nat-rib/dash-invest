@@ -82,10 +82,11 @@ class PortfolioPosition(DomainModel):
     portfolio_id: str = Field(min_length=1)
     instrument_id: str = Field(min_length=1)
     institution: str = Field(min_length=1)
-    quantity: Decimal = Field(ge=0)
+    quantity: Decimal | None = Field(default=None, ge=0)
     average_cost: Decimal | None = Field(default=None, ge=0)
     cost_currency: str = Field(min_length=3, max_length=3)
     as_of: date
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("cost_currency")
     @classmethod

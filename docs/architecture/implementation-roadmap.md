@@ -32,7 +32,8 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 **Estimativa:** 1–2 semanas.
 
 - [x] Introduzir modelos iniciais de Instrument, Portfolio, PortfolioPosition e Transaction.
-- [ ] Persistência SQLite versionada e repositórios.
+- [x] Persistência SQLite versionada e repositórios.
+- [x] Adaptador explícito de snapshot JSON para instrumentos/posições, sem inventar transações.
 - [ ] Migração do snapshot JSON para cadastro/posições sem perder compatibilidade.
 - [ ] Importação e reconciliação de transações.
 - [ ] Eventos de proventos, juros, amortizações, splits, bonificações e transferências.
