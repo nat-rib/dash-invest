@@ -59,7 +59,7 @@ def external_cash_flows(
                 raise ValueError(
                     f"Fluxo em {tx.currency} não pode ser combinado com valores em {currency.upper()} sem FX explícito."
                 )
-        if tx.transaction_type == TransactionType.DEPOSIT:"
+        if tx.transaction_type == TransactionType.DEPOSIT:
             assert tx.amount is not None
             flows.append(DatedCashFlow(tx.occurred_at.date(), -tx.amount))
         elif tx.transaction_type == TransactionType.WITHDRAWAL:
