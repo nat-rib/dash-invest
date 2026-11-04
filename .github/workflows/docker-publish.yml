@@ -127,8 +127,7 @@ jobs:
              APP_DIR=/opt/personal-cloud/apps/dash-invest
              DATA_DIR=/opt/personal-cloud/data/dash-invest
              BACKUP_DIR=/opt/personal-cloud/data/dash-invest-backups
-             mkdir -p "$BACKUP_DIR"
-             chmod 700 "$BACKUP_DIR"
+             sudo -n install -d -m 700 -o deploy -g deploy "$BACKUP_DIR"
              BACKUP_STAMP=$(date -u +%Y%m%dT%H%M%SZ)
              PREVIOUS_IMAGE=$(docker inspect -f "{{.Image}}" dash-invest 2>/dev/null || true)
              WAS_PAUSED=0
@@ -138,14 +137,19 @@ jobs:
              fi
              trap "if [ \"$WAS_PAUSED\" = 1 ]; then docker unpause dash-invest >/dev/null 2>&1 || true; fi" EXIT
              if [ -d "$DATA_DIR" ]; then
-               tar -czf "$BACKUP_DIR/$BACKUP_STAMP.tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
+               sudo -n tar -czf "$BACKUP_DIR/$BACKUP_STAMP.tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
+               sudo -n chown deploy:deploy "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+               chmod 600 "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
              fi
              if [ "$WAS_PAUSED" = 1 ]; then
                docker unpause dash-invest >/dev/null
                WAS_PAUSED=0
              fi
              trap - EXIT
-             find "$BACKUP_DIR" -type f -name "*.tar.gz" -printf "%T@ %p\\n" | sort -nr | awk "NR>7 {print \\$2}" | xargs -r rm -f
+             backup_files=$(ls -1t "$BACKUP_DIR"/*.tar.gz 2>/dev/null || true)
+             printf "%s\\n" "$backup_files" | tail -n +8 | while IFS= read -r old; do
+               [ -n "$old" ] && rm -f "$old"
+             done
 
              if [ ! -f "$APP_DIR/compose.yaml" ]; then
                if [ -d /home/deploy/dash-invest/.git ]; then
