@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import streamlit as st
 import plotly.express as px
 
@@ -10,7 +11,7 @@ st.set_page_config(page_title="Minha carteira", page_icon="◈", layout="wide")
 st.title("Minha carteira")
 st.caption("Visão consolidada, local e sem conexão com instituições financeiras.")
 
-path = Path("portfolio.json")
+path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 if not path.exists():
     st.info("Nenhuma carteira carregada. Use a página **Importação** para selecionar um portfolio.json.")
     st.stop()
