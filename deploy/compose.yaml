@@ -1,0 +1,30 @@
+services:
+  dash-invest:
+    image: ghcr.io/nat-rib/dash-invest:${IMAGE_TAG:-develop}
+    container_name: dash-invest
+    restart: unless-stopped
+    init: true
+    ports:
+      # Acesso somente local na VPS; use Tailscale Serve como entrada privada.
+      - "127.0.0.1:8501:8501"
+    environment:
+      TZ: America/Sao_Paulo
+    volumes:
+      - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/portfolio.json:/app/portfolio.json
+      - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/data:/app/data
+      - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 768m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
