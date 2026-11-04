@@ -10,7 +10,7 @@ if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>
   exit 1
 fi
 
-mkdir -p "$APP_DIR" "$DATA_DIR/data" "$DATA_DIR/.streamlit"
+mkdir -p "$APP_DIR" "$DATA_DIR/.streamlit"
 
 if [[ ! -f "$DATA_DIR/portfolio.json" ]]; then
   cp "$REPO_DIR/portfolio.example.json" "$DATA_DIR/portfolio.json"
