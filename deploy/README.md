@@ -67,7 +67,7 @@ O script preserva a carteira, o banco SQLite e os secrets existentes.
 
 O instalador cria uma carteira de exemplo somente se o arquivo ainda não existir. Importe seu JSON real pela própria página **Importação**. Não copie dados financeiros para o repositório.
 
-Se for usar Alpha Vantage, configure a chave no arquivo `secrets.toml` da VPS copie `.streamlit/secrets.example.toml` para `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml` e substitua o valor de exemplo. Nunca coloque a chave no Git. Reinicie o container após alterar:
+Se for usar Alpha Vantage, copie `.streamlit/secrets.example.toml` para `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml` e substitua o valor de exemplo pela sua chave. Nunca coloque a chave no Git. Reinicie o container após alterar:
 
 ```bash
 docker compose -f /opt/personal-cloud/apps/dash-invest/compose.yaml restart
