@@ -1,6 +1,6 @@
 # Dashboard pessoal de investimentos
 
-Dashboard local em Python/Streamlit para visualizar um snapshot de carteira fornecido em JSON. Não há integrações com corretoras, contas, APIs externas ou internet.
+Dashboard privado em Python/Streamlit para acompanhar uma carteira, operações e dados de mercado. A aplicação mantém o snapshot JSON legado e o ledger SQLite como fontes distintas até que exista uma reconciliação explícita entre eles.
 
 ## Instalação e uso
 
@@ -15,11 +15,11 @@ python -m streamlit run app.py
 
 Ou, após a instalação inicial, execute `./run_dashboard.sh`.
 
-O servidor foi configurado para ouvir somente em `127.0.0.1` e as estatísticas de uso do Streamlit ficam desativadas. Abra a URL exibida no terminal e use **Importação** para validar e substituir a carteira por inteiro. Alternativamente, copie um JSON válido para `portfolio.json` na raiz do projeto.
+O servidor foi configurado para ouvir somente em `127.0.0.1` e as estatísticas de uso do Streamlit ficam desativadas. Abra a URL exibida no terminal. A navegação é organizada em **Visão geral**, **Minha carteira**, **Investigar**, **Mercado** e **Configurações**. Use **Importar carteira** para validar e substituir o snapshot JSON por inteiro. Alternativamente, copie um JSON válido para `portfolio.json` na raiz do projeto.
 
 Use `portfolio.example.json` como referência: todo o conteúdo é fictício. Nunca versione seu `portfolio.json` real.
 
-## Dados e cálculos
+## Interface e fontes de dados\n\nA Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.\n\nA navegação é centralizada em `app.py`; estilos responsivos compartilhados ficam em `src/ui/theme.py`. A adaptação completa de tabelas e a validação em larguras/dispositivos reais seguem no roadmap da Fase 1.\n\n## Dados e cálculos
 
 - Classes aceitas: `acao`, `fii`, `renda_fixa`, `etf`, `exterior`, `cripto`, `fundo`, `outros`, `caixa` e `credito_privado_coletivo`.
 - O valor vem de `current_value`, quando informado; caso contrário, de `quantity × current_price`.
