@@ -12,7 +12,6 @@ from src.persistence.database import SQLiteDatabase
 from src.persistence.repositories import PortfolioRepository, TransactionRepository
 
 
-st.set_page_config(page_title="Rentabilidade", page_icon="%", layout="wide")
 st.title("Rentabilidade da carteira")
 st.caption("TWR remove o efeito dos fluxos externos; XIRR mede a taxa anualizada sob a ótica do investidor.")
 
