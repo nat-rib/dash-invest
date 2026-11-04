@@ -1,14 +1,13 @@
-name: Test and publish Docker image
+name: Test, publish and deploy
 
 on:
   push:
     branches: [develop, main]
   pull_request:
     branches: [develop, main]
-  workflow_dispatch:
 
 concurrency:
-  group: dash-invest-${{ github.ref }}
+  group: dash-invest-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -16,6 +15,7 @@ permissions:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,12 +32,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Compile application modules
+        run: python -m compileall -q app.py pages src
+
+      - name: Validate deployment installer syntax
+        run: bash -n deploy/install.sh
+
       - name: Run tests
         run: python -m pytest -q
 
   publish:
+    name: Build and publish production image
     needs: test
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,7 +69,7 @@ jobs:
         with:
           images: ghcr.io/nat-rib/dash-invest
           tags: |
-            type=ref,event=branch
+            type=raw,value=latest
             type=sha,prefix=sha-
 
       - name: Build and push
@@ -74,3 +81,119 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to private VPS
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Connect runner to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 100.104.34.5 >> ~/.ssh/known_hosts
+
+      - name: Preflight VPS access
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            deploy@100.104.34.5 \
+            'set -e; docker info >/dev/null; sudo -n true'
+
+      - name: Authenticate to GHCR on VPS and deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USERNAME: ${{ github.actor }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            deploy@100.104.34.5 \
+            "docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+
+          ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            deploy@100.104.34.5 \
+            'set -Eeuo pipefail
+             APP_DIR=/opt/personal-cloud/apps/dash-invest
+             DATA_DIR=/opt/personal-cloud/data/dash-invest
+             BACKUP_DIR=/opt/personal-cloud/data/dash-invest-backups
+             sudo -n install -d -m 700 -o deploy -g deploy "$BACKUP_DIR"
+             BACKUP_STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+             PREVIOUS_IMAGE=$(docker inspect -f "{{.Image}}" dash-invest 2>/dev/null || true)
+             WAS_PAUSED=0
+             if docker inspect dash-invest >/dev/null 2>&1; then
+               docker pause dash-invest >/dev/null
+               WAS_PAUSED=1
+             fi
+             trap "if [ \"$WAS_PAUSED\" = 1 ]; then docker unpause dash-invest >/dev/null 2>&1 || true; fi" EXIT
+             if [ -d "$DATA_DIR" ]; then
+               sudo -n tar -czf "$BACKUP_DIR/$BACKUP_STAMP.tar.gz" -C "$(dirname "$DATA_DIR")" "$(basename "$DATA_DIR")"
+               sudo -n chown deploy:deploy "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+               chmod 600 "$BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+             fi
+             if [ "$WAS_PAUSED" = 1 ]; then
+               docker unpause dash-invest >/dev/null
+               WAS_PAUSED=0
+             fi
+             trap - EXIT
+             backup_files=$(ls -1t "$BACKUP_DIR"/*.tar.gz 2>/dev/null || true)
+             printf "%s\n" "$backup_files" | tail -n +8 | while IFS= read -r old; do
+               [ -n "$old" ] && rm -f "$old"
+             done
+
+             if [ ! -f "$APP_DIR/compose.yaml" ]; then
+               if [ -d /home/deploy/dash-invest/.git ]; then
+                 cd /home/deploy/dash-invest
+                 git fetch origin main
+                 git checkout -B main origin/main
+               else
+                 git clone --branch main https://github.com/nat-rib/dash-invest.git /home/deploy/dash-invest
+               fi
+               cd /home/deploy/dash-invest
+               IMAGE_TAG=latest bash ./deploy/install.sh
+             else
+               cd "$APP_DIR"
+               IMAGE_TAG=latest docker compose pull
+               IMAGE_TAG=latest docker compose up -d --remove-orphans
+             fi
+
+             HEALTH=starting
+             for attempt in $(seq 1 30); do
+               HEALTH=$(docker inspect -f "{{.State.Health.Status}}" dash-invest 2>/dev/null || echo missing)
+               if [ "$HEALTH" = healthy ]; then
+                 echo "Deploy saudável. Backup: $BACKUP_DIR/$BACKUP_STAMP.tar.gz"
+                 exit 0
+               fi
+               if [ "$HEALTH" = unhealthy ] || [ "$HEALTH" = missing ]; then
+                 break
+               fi
+               sleep 3
+             done
+
+             echo "Healthcheck falhou (status: $HEALTH). Tentando rollback."
+             if [ -n "$PREVIOUS_IMAGE" ]; then
+               docker tag "$PREVIOUS_IMAGE" ghcr.io/nat-rib/dash-invest:rollback
+               cd "$APP_DIR"
+               IMAGE_TAG=rollback docker compose up -d --remove-orphans
+               echo "Rollback solicitado para imagem $PREVIOUS_IMAGE."
+             else
+               docker compose -f "$APP_DIR/compose.yaml" down || true
+               echo "Primeiro deploy falhou; serviço novo foi removido."
+             fi
+             exit 1'

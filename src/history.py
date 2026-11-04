@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 import sqlite3
 
@@ -11,7 +12,7 @@ from src.portfolio import consolidated_total, positions_frame
 from src.schemas import PortfolioSnapshot
 
 
-DEFAULT_DB = Path("data/portfolio_history.db")
+DEFAULT_DB = Path(os.environ.get("HISTORY_DB_PATH", "data/portfolio_history.db"))
 
 
 def _connection(path: Path = DEFAULT_DB) -> sqlite3.Connection:
