@@ -8,24 +8,24 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 - [x] Definir arquitetura alvo e princípios.
 - [x] Documentar fases, riscos e critérios de aceite.
-- [ ] Finalizar revisão do PR de CI/CD existente.
+- [x] Finalizar revisão do PR de CI/CD existente.
 - [x] Registrar ADRs para decisões estruturais.
-- [ ] Definir convenções de branch, migração e testes financeiros.
+- [x] Definir convenções de branch, migração e testes financeiros.
 
-**Aceite:** documentação versionada; develop como integração; main somente produção; CI executa testes em PR; nenhum dado pessoal no repositório.
+**Aceite:** documentação versionada; develop como integração; main somente produção; CI executa testes em PR; nenhum dado pessoal no repositório. Governança e CI/CD foram concluídos; deploy privado em produção validado em 04/11/2026.
 
 ## Fase 1 — Mobile redesign e navegação
 
 **Estimativa:** 4–6 dias.
 
-- [ ] Reorganizar navegação em Visão geral, Minha carteira, Investigar, Mercado e Configurações.
+- [x] Reorganizar navegação em Visão geral, Minha carteira, Investigar, Mercado e Configurações.
 - [ ] Dashboard com patrimônio, rentabilidade disponível, benchmark, alocação, maiores posições e alertas.
 - [ ] Componentes reutilizáveis: metric_card, position_card, opportunity_card, risk_badge, responsive_chart e indicador de qualidade.
 - [ ] Transformar tabelas extensas em cards no celular; preservar tabelas completas no desktop.
 - [ ] Validar em 390 px, 430 px, desktop e Android S23.
 - [ ] Evitar rolagem horizontal e controles pequenos.
 
-**Aceite:** fluxos principais utilizáveis em celular sem scroll horizontal; desktop continua funcional; nenhuma fórmula financeira duplicada na UI.
+**Estado parcial:** navegação agrupada e dashboard inicial implementados na PR #10. O dashboard identifica explicitamente o snapshot JSON como fonte e não mistura automaticamente dados do ledger SQLite. Componentes completos, adaptação de tabelas e validação real em dispositivos continuam pendentes.\n\n**Aceite:** fluxos principais utilizáveis em celular sem scroll horizontal; desktop continua funcional; nenhuma fórmula financeira duplicada na UI.
 
 ## Fase 2 — Portfolio Engine e ledger
 

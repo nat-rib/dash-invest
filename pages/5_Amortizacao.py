@@ -5,7 +5,6 @@ import streamlit as st
 from src.formatting import money, percent
 from src.mortgage import amortize_extra, break_even_net_return, build_sac_schedule, compare_with_investment, savings
 
-st.set_page_config(page_title="Amortizar ou investir", page_icon="⌁", layout="wide")
 st.title("Amortizar ou investir")
 st.caption("Projeção para financiamento SAC + TR. Valores estimados; confira sempre a simulação e o boleto da CAIXA antes de amortizar.")
 

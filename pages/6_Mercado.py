@@ -9,7 +9,6 @@ from src.history import record_snapshot
 from src.market_data import AlphaVantageClient, MarketDataError, replace_prices, updatable_positions
 from src.portfolio import positions_frame
 
-st.set_page_config(page_title="Mercado", page_icon="↗", layout="wide")
 st.title("Cotações e histórico")
 st.caption("Fonte: Alpha Vantage. Apenas símbolos de negociação são enviados ao provedor; saldos, quantidades e instituições permanecem locais.")
 st.info("Chaves gratuitas têm limite de 25 consultas por dia. O painel espera automaticamente entre consultas; atualize somente os ativos necessários.")

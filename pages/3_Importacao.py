@@ -4,7 +4,6 @@ import streamlit as st
 from src.importer import replace_snapshot, validate_json, validation_messages
 from src.portfolio import duplicate_positions, positions_frame
 
-st.set_page_config(page_title="Importação", page_icon="↑", layout="wide")
 st.title("Importar carteira")
 st.caption("A importação substitui o snapshot inteiro. O arquivo é tratado exclusivamente como dados JSON.")
 uploaded = st.file_uploader("Selecione portfolio.json", type=["json"])

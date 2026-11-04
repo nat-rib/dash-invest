@@ -4,7 +4,6 @@ import streamlit as st
 from src.importer import load_snapshot
 from src.portfolio import positions_frame
 
-st.set_page_config(page_title="Carteira", page_icon="▤", layout="wide")
 st.title("Carteira")
 path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 if not path.exists():
