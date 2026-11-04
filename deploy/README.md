@@ -27,7 +27,7 @@ Clone o repositório (público) e execute o instalador:
 cd ~
 git clone --branch develop https://github.com/nat-rib/dash-invest.git
 cd dash-invest
-./deploy/install.sh
+bash ./deploy/install.sh
 ```
 
 O instalador cria os diretórios persistentes em `/opt/personal-cloud/data/dash-invest`, inicializa a carteira com dados fictícios de exemplo se ainda não existir, ajusta permissões para o usuário não-root do container e sobe a imagem.
@@ -62,7 +62,7 @@ O script preserva a carteira, o banco SQLite e os secrets existentes.
 ## 5. Arquivos de dados e Alpha Vantage
 
 - Carteira: `/opt/personal-cloud/data/dash-invest/portfolio.json`
-- Histórico SQLite: `/opt/personal-cloud/data/dash-invest/data/`
+- Histórico SQLite: `/opt/personal-cloud/data/dash-invest/portfolio_history.db`
 - Secrets Streamlit: `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml`
 
 O instalador cria uma carteira de exemplo somente se o arquivo ainda não existir. Importe seu JSON real pela própria página **Importação**. Não copie dados financeiros para o repositório.
