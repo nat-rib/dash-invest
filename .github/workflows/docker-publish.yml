@@ -32,6 +32,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      - name: Compile application modules
+        run: python -m compileall -q app.py pages src
+
+      - name: Validate deployment installer syntax
+        run: bash -n deploy/install.sh
+
       - name: Run tests
         run: python -m pytest -q
 
