@@ -308,8 +308,8 @@ class TransferLinkRepository:
 
             existing = connection.execute(
                 """SELECT * FROM transfer_links
-                   WHERE transfer_out_id = ? OR transfer_in_id IN (?, ?)""",
-                (transfer_out_id, transfer_out_id, transfer_in_id),
+                   WHERE transfer_out_id IN (?, ?) OR transfer_in_id IN (?, ?)""",
+                (transfer_out_id, transfer_in_id, transfer_out_id, transfer_in_id),
             ).fetchall()
             if existing:
                 exact = next((
