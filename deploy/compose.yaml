@@ -1,6 +1,6 @@
 services:
   dash-invest:
-    image: ghcr.io/nat-rib/dash-invest:${IMAGE_TAG:-develop}
+    image: ghcr.io/nat-rib/dash-invest:${IMAGE_TAG:-latest}
     container_name: dash-invest
     restart: unless-stopped
     init: true
@@ -10,6 +10,7 @@ services:
     environment:
       TZ: America/Sao_Paulo
       PORTFOLIO_PATH: /app/data/portfolio.json
+      HISTORY_DB_PATH: /app/data/portfolio_history.db
       HOME: /tmp
       XDG_CACHE_HOME: /tmp/.cache
     volumes:
