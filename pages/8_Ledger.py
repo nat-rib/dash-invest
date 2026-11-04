@@ -235,6 +235,39 @@ with tab_reconciliation:
         st.warning(f"{len(result.ambiguous_transaction_ids)} operações possuem mais de uma correspondência possível; exigem revisão manual.")
     if result.unmatched_transaction_ids:
         st.caption(f"{len(result.unmatched_transaction_ids)} transferências sem correspondência candidata.")
+    st.divider()
+    st.subheader("Pareamento manual")
+    st.caption(
+        "Use esta opção para resolver casos ambíguos ou com diferenças explicáveis no extrato. "
+        "A confirmação fica registrada separadamente e não modifica as transações."
+    )
+    outgoing = [event for event in pending_events if event.transaction_type.value == "TRANSFER_OUT"]
+    incoming_events = [event for event in pending_events if event.transaction_type.value == "TRANSFER_IN"]
+    if outgoing and incoming_events:
+        out_labels = {
+            f"{event.institution} · {event.occurred_at:%d/%m/%Y} · {event.amount} {event.currency} · {event.id[:8]}": event.id
+            for event in outgoing
+        }
+        in_labels = {
+            f"{event.institution} · {event.occurred_at:%d/%m/%Y} · {event.amount} {event.currency} · {event.id[:8]}": event.id
+            for event in incoming_events
+        }
+        manual_left, manual_right = st.columns(2)
+        selected_out_label = manual_left.selectbox("Transferência de saída", list(out_labels))
+        selected_in_label = manual_right.selectbox("Transferência de entrada", list(in_labels))
+        if st.button("Confirmar pareamento manual", type="primary", key="manual_transfer_confirm"):
+            try:
+                transfer_links.confirm(
+                    out_labels[selected_out_label], in_labels[selected_in_label],
+                    confirmation_source="manual_review",
+                )
+                st.success("Pareamento manual registrado.")
+                st.rerun()
+            except Exception as error:
+                st.error(f"Não foi possível confirmar o pareamento: {error}")
+    else:
+        st.caption("Não há duas pontas pendentes disponíveis para pareamento manual.")
+
     if links:
         st.subheader("Pareamentos confirmados")
         st.dataframe([
