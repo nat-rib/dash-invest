@@ -67,9 +67,8 @@ def test_same_instrument_across_institutions_has_one_catalog_entry(tmp_path):
     assert {position.institution for position in petr_positions} == {"Corretora A", "Corretora B"}
 
 
-def test_snapshot_import_rolls_back_everything_on_conflicting_positions(tmp_path):
+def test_snapshot_import_rejects_duplicate_instrument_rows(tmp_path):
     import pytest
-    import sqlite3
 
     database = SQLiteDatabase(tmp_path / "atomic.db")
     database.initialize()
@@ -77,8 +76,29 @@ def test_snapshot_import_rolls_back_everything_on_conflicting_positions(tmp_path
     duplicate = snapshot.positions[0].model_copy()
     snapshot = snapshot.model_copy(update={"positions": [snapshot.positions[0], duplicate]})
 
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(ValueError, match="mesmo instrumento"):
         PortfolioSnapshotImporter(database).import_snapshot(snapshot)
+
+    assert PortfolioRepository(database).list_all() == []
+    assert InstrumentRepository(database).list_all() == []
+    assert PortfolioPositionRepository(database).list_snapshots("legacy-import") == []
+
+
+def test_snapshot_import_rolls_back_if_a_position_write_fails(tmp_path, monkeypatch):
+    import pytest
+
+    database = SQLiteDatabase(tmp_path / "rollback.db")
+    database.initialize()
+    original = PortfolioPositionRepository.save_snapshot
+
+    def fail_on_bank_position(self, position, connection=None):
+        if position.institution == "Banco C":
+            raise RuntimeError("simulated persistence failure")
+        return original(self, position, connection=connection)
+
+    monkeypatch.setattr(PortfolioPositionRepository, "save_snapshot", fail_on_bank_position)
+    with pytest.raises(RuntimeError, match="simulated persistence failure"):
+        PortfolioSnapshotImporter(database).import_snapshot(_snapshot())
 
     assert PortfolioRepository(database).list_all() == []
     assert InstrumentRepository(database).list_all() == []

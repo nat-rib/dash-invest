@@ -108,6 +108,13 @@ class PortfolioSnapshotImporter:
             for position in snapshot.positions
         ]
 
+        position_keys = [(item.instrument_id, item.institution) for item in positions]
+        if len(position_keys) != len(set(position_keys)):
+            raise ValueError(
+                "O snapshot contém o mesmo instrumento mais de uma vez na mesma instituição; "
+                "consolide as linhas antes de importar."
+            )
+
         # Um único commit evita carteira parcialmente importada em caso de erro.
         with self.database.transaction() as connection:
             self.portfolios.save(portfolio, connection=connection)
