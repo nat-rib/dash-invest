@@ -82,6 +82,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Connect runner to Tailscale
         uses: tailscale/github-action@v4
@@ -99,9 +102,33 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 100.104.34.5 >> ~/.ssh/known_hosts
 
-      - name: Pull and restart production container
+      - name: Authenticate to GHCR on VPS and deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USERNAME: ${{ github.actor }}
         run: |
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            deploy@100.104.34.5 \
+            "docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+
           ssh -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
             deploy@100.104.34.5 \
-            'cd /opt/personal-cloud/apps/dash-invest && IMAGE_TAG=latest docker compose pull && IMAGE_TAG=latest docker compose up -d --remove-orphans'
+            'set -Eeuo pipefail
+             trap "docker logout ghcr.io >/dev/null 2>&1 || true" EXIT
+             if [ ! -f /opt/personal-cloud/apps/dash-invest/compose.yaml ]; then
+               if [ -d /home/deploy/dash-invest/.git ]; then
+                 cd /home/deploy/dash-invest
+                 git fetch origin main
+                 git checkout -B main origin/main
+               else
+                 git clone --branch main https://github.com/nat-rib/dash-invest.git /home/deploy/dash-invest
+               fi
+               cd /home/deploy/dash-invest
+               IMAGE_TAG=latest bash ./deploy/install.sh
+             else
+               cd /opt/personal-cloud/apps/dash-invest
+               IMAGE_TAG=latest docker compose pull
+               IMAGE_TAG=latest docker compose up -d --remove-orphans
+             fi'
