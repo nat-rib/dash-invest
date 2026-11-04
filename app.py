@@ -18,7 +18,7 @@ navigation = st.navigation(
             st.Page(render_dashboard, title="Visão geral", icon="🏠", default=True),
         ],
         "Minha carteira": [
-            st.Page("pages/1_Carteira.py", title="Posições", icon="💼"),
+            st.Page("pages/1_Carteira.py", title="Posições", icon="📁"),
             st.Page("pages/4_Detalhes.py", title="Detalhes do ativo", icon="🔎"),
             st.Page("pages/8_Ledger.py", title="Ledger e operações", icon="🔄"),
             st.Page("pages/9_Rentabilidade.py", title="Rentabilidade", icon="📈"),
