@@ -3,11 +3,11 @@ from decimal import Decimal
 
 import pytest
 
-from src.domain.models import Portfolio
+from src.domain.models import AssetClass, Instrument, Portfolio
 from src.importers.broker_csv import BrokerCsvMapping, adapt_broker_csv
 from src.importers.transactions_csv import CanonicalTransactionCsvImporter, TransactionCsvImportError
 from src.persistence.database import SQLiteDatabase
-from src.persistence.repositories import PortfolioRepository, TransactionRepository
+from src.persistence.repositories import InstrumentRepository, PortfolioRepository, TransactionRepository
 
 
 @pytest.fixture
@@ -15,6 +15,9 @@ def setup_importer(tmp_path):
     db = SQLiteDatabase(tmp_path / "broker.db")
     db.initialize()
     PortfolioRepository(db).save(Portfolio(id="main", name="Principal"))
+    InstrumentRepository(db).save(Instrument(
+        id="instrument-petr4", name="Petrobras PN", asset_class=AssetClass.EQUITY, currency="BRL",
+    ))
     repository = TransactionRepository(db)
     return CanonicalTransactionCsvImporter(repository), repository
 
