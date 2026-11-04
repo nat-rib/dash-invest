@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import streamlit as st
 from src.importer import load_snapshot
 from src.portfolio import positions_frame
@@ -6,7 +7,7 @@ from src.formatting import money, number, percent
 
 st.set_page_config(page_title="Detalhes", page_icon="◉", layout="wide")
 st.title("Detalhes do ativo")
-path = Path("portfolio.json")
+path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 if not path.exists(): st.info("Importe uma carteira primeiro."); st.stop()
 try: frame = positions_frame(load_snapshot(path))
 except Exception as error: st.error(str(error)); st.stop()
