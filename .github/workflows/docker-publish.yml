@@ -1,14 +1,13 @@
-name: Test and publish Docker image
+name: Test, publish and deploy
 
 on:
   push:
     branches: [develop, main]
   pull_request:
     branches: [develop, main]
-  workflow_dispatch:
 
 concurrency:
-  group: dash-invest-${{ github.ref }}
+  group: dash-invest-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -16,6 +15,7 @@ permissions:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,8 +36,9 @@ jobs:
         run: python -m pytest -q
 
   publish:
+    name: Build and publish production image
     needs: test
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,7 +63,7 @@ jobs:
         with:
           images: ghcr.io/nat-rib/dash-invest
           tags: |
-            type=ref,event=branch
+            type=raw,value=latest
             type=sha,prefix=sha-
 
       - name: Build and push
@@ -74,3 +75,33 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to private VPS
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Connect runner to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 100.104.34.5 >> ~/.ssh/known_hosts
+
+      - name: Pull and restart production container
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            deploy@100.104.34.5 \
+            'cd /opt/personal-cloud/apps/dash-invest && IMAGE_TAG=latest docker compose pull && IMAGE_TAG=latest docker compose up -d --remove-orphans'
