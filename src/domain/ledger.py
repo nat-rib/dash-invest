@@ -82,7 +82,7 @@ def rebuild_position(
         metadata = {}
         as_of = None
 
-    ordered = sorted(transactions, key=lambda tx: (tx.occurred_at, tx.id))
+    ordered = sorted(transactions, key=lambda tx: (tx.occurred_at, tx.sequence, tx.id))
     realized_profit: Decimal | None = Decimal("0") if cost_basis is not None else None
 
     for tx in ordered:

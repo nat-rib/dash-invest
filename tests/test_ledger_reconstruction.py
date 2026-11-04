@@ -10,11 +10,11 @@ from src.domain.ledger import (
 from src.domain.models import PortfolioPosition, Transaction, TransactionType
 
 
-def _tx(tx_id, kind, *, institution="Broker", quantity=None, unit_price=None,
+def _tx(tx_id, kind, *, institution="Broker", sequence=0, quantity=None, unit_price=None,
         amount=None, fees="0", taxes="0", metadata=None, transfer_id=None):
     return Transaction(
         id=tx_id, portfolio_id="main", transaction_type=kind,
-        occurred_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
+        occurred_at=datetime(2026, 11, 4, tzinfo=timezone.utc), sequence=sequence,
         institution=institution, instrument_id="asset-1", quantity=quantity,
         unit_price=unit_price, amount=amount, currency="BRL", fees=Decimal(fees),
         taxes=Decimal(taxes), metadata=metadata or {}, transfer_id=transfer_id,
@@ -55,8 +55,8 @@ def test_split_and_bonus_change_quantity_without_changing_cost_basis():
         portfolio_id="main", instrument_id="asset-1", institution="Broker",
         opening_position=opening,
         transactions=[
-            _tx("split", TransactionType.SPLIT, metadata={"ratio": "2"}),
-            _tx("bonus", TransactionType.BONUS, quantity=Decimal("5")),
+            _tx("split", TransactionType.SPLIT, sequence=1, metadata={"ratio": "2"}),
+            _tx("bonus", TransactionType.BONUS, sequence=2, quantity=Decimal("5")),
         ],
     )
     assert result.position.quantity == Decimal("25")

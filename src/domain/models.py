@@ -105,6 +105,7 @@ class Transaction(DomainModel):
     portfolio_id: str = Field(min_length=1)
     transaction_type: TransactionType
     occurred_at: datetime
+    sequence: int = Field(default=0, ge=0)
     institution: str = Field(min_length=1)
     instrument_id: str | None = None
     quantity: Decimal | None = Field(default=None, gt=0)

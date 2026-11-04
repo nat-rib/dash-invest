@@ -25,7 +25,10 @@ def test_migrations_are_versioned_and_idempotent(tmp_path):
     db = SQLiteDatabase(tmp_path / "nested" / "portfolio.db")
     db.initialize()
     db.initialize()
-    assert db.applied_migrations() == [(1, "0001_initial_schema.sql")]
+    assert db.applied_migrations() == [
+        (1, "0001_initial_schema.sql"),
+        (2, "0002_transaction_sequence.sql"),
+    ]
 
 
 def test_portfolio_and_instrument_round_trip(database):
