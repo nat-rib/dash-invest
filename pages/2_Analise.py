@@ -5,7 +5,6 @@ import plotly.express as px
 from src.importer import load_snapshot
 from src.portfolio import brl_frame, consolidated_total, positions_frame
 
-st.set_page_config(page_title="Análise", page_icon="◔", layout="wide")
 st.title("Análise")
 st.caption("Um único snapshot descreve a carteira atual; não permite reconstruir desempenho histórico, TWR ou XIRR.")
 path = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
