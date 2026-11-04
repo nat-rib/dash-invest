@@ -19,7 +19,6 @@ from src.persistence.repositories import (
 from src.persistence.snapshot_import import PortfolioSnapshotImporter
 
 
-st.set_page_config(page_title="Ledger e operações", page_icon="⇄", layout="wide")
 st.title("Ledger e operações")
 st.caption("Importação controlada, histórico auditável e conciliação explícita de transferências.")
 
