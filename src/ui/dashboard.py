@@ -57,7 +57,7 @@ def render_dashboard() -> None:
     quality = _quality_summary(frame)
 
     metrics = st.columns(4)
-    metrics[0].metric("Patrimônio conhecido em BRL", money(total))
+    metrics[0].metric("Patrimônio conhecido em BRL", money(total) if not known_brl.empty else "Não disponível")
     metrics[1].metric("Ativos", f"{quality['total']}")
     metrics[2].metric("Instituições", f"{frame['Instituição'].nunique()}")
     metrics[3].metric("Posições com valor em BRL", f"{quality['value_known']}/{quality['total']}")
@@ -111,9 +111,10 @@ def render_dashboard() -> None:
                 with cards[offset]:
                     with st.container(border=True):
                         st.markdown(f"**{position['Nome']}**")
+                        ticker = position["Ticker"]
+                        ticker_label = ticker if isinstance(ticker, str) and ticker else "Sem ticker"
                         st.caption(
-                            f"{position['Ticker'] or 'Sem ticker'} · "
-                            f"{position['Instituição']} · {position['Classe']}"
+                            f"{ticker_label} · {position['Instituição']} · {position['Classe']}"
                         )
                         st.metric("Valor conhecido", money(position["Valor consolidado BRL"]))
 
