@@ -95,10 +95,11 @@ class PortfolioPosition(DomainModel):
 
 
 class Transaction(DomainModel):
-    """Evento do ledger; sentido econômico é definido pelo tipo.
+    """Evento imutável do ledger.
 
-    Valores monetários e quantidades são positivos. Transferências internas
-    exigem transfer_id para pareamento entre instituições.
+    Transferências podem entrar inicialmente sem transfer_id: a conciliação
+    sugere pares com base em atributos econômicos, mas não os confirma sozinha.
+    Valores monetários e quantidades são positivos.
     """
 
     id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
@@ -163,8 +164,6 @@ class Transaction(DomainModel):
         if self.transaction_type == TransactionType.AMORTIZATION and not self.instrument_id:
             raise ValueError("AMORTIZATION exige instrument_id.")
         if self.transaction_type in {TransactionType.TRANSFER_IN, TransactionType.TRANSFER_OUT}:
-            if not self.transfer_id:
-                raise ValueError("Transferências internas exigem transfer_id.")
             if self.amount is None:
                 raise ValueError("Transferências exigem amount (valor em dinheiro ou custo transferido).")
             if self.instrument_id is None and self.amount <= 0:

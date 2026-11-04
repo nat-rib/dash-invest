@@ -44,13 +44,13 @@ def test_cash_event_requires_amount():
         )
 
 
-def test_internal_transfer_requires_pairing_reference():
-    with pytest.raises(ValidationError, match="transfer_id"):
-        Transaction(
-            portfolio_id="main", transaction_type=TransactionType.TRANSFER_OUT,
-            occurred_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
-            institution="Broker", amount=Decimal("100"), currency="BRL",
-        )
+def test_internal_transfer_can_be_imported_before_pairing():
+    tx = Transaction(
+        portfolio_id="main", transaction_type=TransactionType.TRANSFER_OUT,
+        occurred_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
+        institution="Broker", amount=Decimal("100"), currency="BRL",
+    )
+    assert tx.transfer_id is None
 
 
 def test_internal_transfer_accepts_shared_reference():

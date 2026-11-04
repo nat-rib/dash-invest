@@ -188,24 +188,53 @@ class TransactionRepository:
     def __init__(self, database: SQLiteDatabase):
         self.database = database
 
+    @staticmethod
+    def _insert(connection: sqlite3.Connection, transaction: Transaction) -> None:
+        connection.execute(
+            """INSERT INTO transactions (
+                   id, portfolio_id, transaction_type, occurred_at, sequence, institution,
+                   instrument_id, quantity, unit_price, amount, currency, fees, taxes,
+                   transfer_id, external_id, notes, metadata_json
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (transaction.id, transaction.portfolio_id, transaction.transaction_type.value,
+             _utc_iso(transaction.occurred_at), transaction.sequence, transaction.institution, transaction.instrument_id,
+             str(transaction.quantity) if transaction.quantity is not None else None,
+             str(transaction.unit_price) if transaction.unit_price is not None else None,
+             str(transaction.amount) if transaction.amount is not None else None,
+             transaction.currency, str(transaction.fees), str(transaction.taxes),
+             transaction.transfer_id, transaction.external_id, transaction.notes,
+             _json_dump(transaction.metadata)),
+        )
+
     def append(self, transaction: Transaction) -> Transaction:
+        """Insere um evento individual; colisões de chave são sempre erros."""
         with self.database.transaction() as connection:
-            connection.execute(
-                """INSERT INTO transactions (
-                       id, portfolio_id, transaction_type, occurred_at, sequence, institution,
-                       instrument_id, quantity, unit_price, amount, currency, fees, taxes,
-                       transfer_id, external_id, notes, metadata_json
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (transaction.id, transaction.portfolio_id, transaction.transaction_type.value,
-                 _utc_iso(transaction.occurred_at), transaction.sequence, transaction.institution, transaction.instrument_id,
-                 str(transaction.quantity) if transaction.quantity is not None else None,
-                 str(transaction.unit_price) if transaction.unit_price is not None else None,
-                 str(transaction.amount) if transaction.amount is not None else None,
-                 transaction.currency, str(transaction.fees), str(transaction.taxes),
-                 transaction.transfer_id, transaction.external_id, transaction.notes,
-                 _json_dump(transaction.metadata)),
-            )
+            self._insert(connection, transaction)
         return transaction
+
+    def append_many(self, transactions: list[Transaction]) -> tuple[int, int]:
+        """Insere lote atomicamente; reimportações idênticas por external_id são ignoradas."""
+        inserted = 0
+        skipped = 0
+        with self.database.transaction() as connection:
+            for transaction in transactions:
+                if transaction.external_id is not None:
+                    row = connection.execute(
+                        """SELECT * FROM transactions
+                           WHERE portfolio_id = ? AND institution = ? AND external_id = ?""",
+                        (transaction.portfolio_id, transaction.institution, transaction.external_id),
+                    ).fetchone()
+                    if row is not None:
+                        if _transaction_from_row(row) != transaction:
+                            raise ValueError(
+                                "external_id já existe com conteúdo diferente: "
+                                f"{transaction.institution}/{transaction.external_id}"
+                            )
+                        skipped += 1
+                        continue
+                self._insert(connection, transaction)
+                inserted += 1
+        return inserted, skipped
 
     def get(self, transaction_id: str) -> Transaction | None:
         with self.database.connection() as connection:
