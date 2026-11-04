@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -152,10 +152,10 @@ class Transaction(DomainModel):
                 raise ValueError("SPLIT exige instrument_id.")
             try:
                 ratio = Decimal(str(self.metadata["ratio"]))
-            except (KeyError, TypeError, ValueError):
+            except (KeyError, TypeError, ValueError, InvalidOperation):
                 raise ValueError("SPLIT exige metadata.ratio numérico.") from None
-            if ratio <= 0:
-                raise ValueError("SPLIT metadata.ratio deve ser positivo.")
+            if not ratio.is_finite() or ratio <= 0:
+                raise ValueError("SPLIT metadata.ratio deve ser finito e positivo.")
         if self.transaction_type == TransactionType.BONUS:
             if not self.instrument_id or self.quantity is None:
                 raise ValueError("BONUS exige instrument_id e quantity.")
