@@ -1,7 +1,7 @@
 """Modelos universais do domínio; independentes de UI e persistência."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -68,7 +68,7 @@ class Portfolio(DomainModel):
     id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
     name: str = Field(min_length=1)
     base_currency: str = Field(default="BRL", min_length=3, max_length=3)
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("base_currency")
     @classmethod

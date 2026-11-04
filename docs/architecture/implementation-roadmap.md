@@ -9,7 +9,7 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - [x] Definir arquitetura alvo e princípios.
 - [x] Documentar fases, riscos e critérios de aceite.
 - [ ] Finalizar revisão do PR de CI/CD existente.
-- [ ] Registrar ADRs para decisões estruturais.
+- [x] Registrar ADRs para decisões estruturais.
 - [ ] Definir convenções de branch, migração e testes financeiros.
 
 **Aceite:** documentação versionada; develop como integração; main somente produção; CI executa testes em PR; nenhum dado pessoal no repositório.

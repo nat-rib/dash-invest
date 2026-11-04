@@ -44,3 +44,7 @@ Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/
 ```bash
 pytest
 ```
+
+## Arquitetura e roadmap
+
+A visão arquitetural, decisões técnicas e fases de implementação estão documentadas em [`docs/architecture/`](docs/architecture/README.md) e no [roadmap](docs/architecture/implementation-roadmap.md).
