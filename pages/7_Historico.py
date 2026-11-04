@@ -3,7 +3,6 @@ import streamlit as st
 
 from src.history import portfolio_history, position_history
 
-st.set_page_config(page_title="Histórico", page_icon="⌁", layout="wide")
 st.title("Histórico patrimonial")
 st.caption("Snapshots são armazenados somente em `data/portfolio_history.db` neste Mac.")
 history = portfolio_history()
