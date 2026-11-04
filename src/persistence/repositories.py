@@ -207,7 +207,9 @@ class TransactionRepository:
         )
 
     def append(self, transaction: Transaction) -> Transaction:
-        self.append_many([transaction])
+        """Insere um evento individual; colisões de chave são sempre erros."""
+        with self.database.transaction() as connection:
+            self._insert(connection, transaction)
         return transaction
 
     def append_many(self, transactions: list[Transaction]) -> tuple[int, int]:
