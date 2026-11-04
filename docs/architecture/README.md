@@ -95,7 +95,7 @@ Uma carteira pode deter instrumentos em instituições diferentes. A posição �
 
 ### Transaction / ledger
 
-Eventos com data/hora, carteira, instrumento (quando aplicável), instituição, tipo, quantidade, preço unitário, valor, moeda, taxas, impostos e referência de transferência. Correções devem gerar estorno/novo evento auditável, não apagar o histórico.
+Eventos com data/hora, sequência explícita para desempate no mesmo instante, carteira, instrumento (quando aplicável), instituição, tipo, quantidade, preço unitário, valor, moeda, taxas, impostos e referência de transferência. Correções devem gerar estorno/novo evento auditável, não apagar o histórico.
 
 Tipos previstos: BUY, SELL, DEPOSIT, WITHDRAWAL, DIVIDEND, JCP, INTEREST, COUPON, AMORTIZATION, TAX, FEE, SPLIT, BONUS, TRANSFER_IN e TRANSFER_OUT.
 

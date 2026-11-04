@@ -25,7 +25,10 @@ def test_migrations_are_versioned_and_idempotent(tmp_path):
     db = SQLiteDatabase(tmp_path / "nested" / "portfolio.db")
     db.initialize()
     db.initialize()
-    assert db.applied_migrations() == [(1, "0001_initial_schema.sql")]
+    assert db.applied_migrations() == [
+        (1, "0001_initial_schema.sql"),
+        (2, "0002_transaction_sequence.sql"),
+    ]
 
 
 def test_portfolio_and_instrument_round_trip(database):
@@ -70,7 +73,7 @@ def test_transaction_append_round_trip_preserves_decimal_precision(database):
     )
     transaction = Transaction(
         id="tx-1", portfolio_id="main", transaction_type=TransactionType.BUY,
-        occurred_at=datetime(2026, 11, 4, 13, 30, tzinfo=timezone.utc),
+        occurred_at=datetime(2026, 11, 4, 13, 30, tzinfo=timezone.utc), sequence=3,
         institution="Corretora", instrument_id="asset-1", quantity=Decimal("0.12345678"),
         unit_price=Decimal("123.45678901"), amount=Decimal("15.241578"), currency="brl",
         fees=Decimal("0.01"), taxes=Decimal("0"), metadata={"source": "manual"},
@@ -135,3 +138,17 @@ def test_transaction_timestamps_are_stored_and_sorted_as_utc(database):
     repo.append(earlier_instant)
     assert [tx.id for tx in repo.list_for_portfolio("main")] == ["earlier", "later"]
     assert repo.get("later").occurred_at == datetime.fromisoformat("2026-11-04T15:00:00+00:00")
+
+
+def test_same_timestamp_transactions_use_explicit_sequence(database):
+    PortfolioRepository(database).save(Portfolio(id="main", name="Principal"))
+    repo = TransactionRepository(database)
+    later_sequence = Transaction(
+        id="event-2", portfolio_id="main", transaction_type=TransactionType.DEPOSIT,
+        occurred_at=datetime(2026, 11, 4, tzinfo=timezone.utc), sequence=2,
+        institution="Banco", amount=Decimal("20"), currency="BRL",
+    )
+    earlier_sequence = later_sequence.model_copy(update={"id": "event-1", "sequence": 1})
+    repo.append(later_sequence)
+    repo.append(earlier_sequence)
+    assert [tx.id for tx in repo.list_for_portfolio("main")] == ["event-1", "event-2"]

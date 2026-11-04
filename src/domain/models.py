@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -105,11 +105,12 @@ class Transaction(DomainModel):
     portfolio_id: str = Field(min_length=1)
     transaction_type: TransactionType
     occurred_at: datetime
+    sequence: int = Field(default=0, ge=0)
     institution: str = Field(min_length=1)
     instrument_id: str | None = None
     quantity: Decimal | None = Field(default=None, gt=0)
     unit_price: Decimal | None = Field(default=None, ge=0)
-    amount: Decimal | None = Field(default=None, gt=0)
+    amount: Decimal | None = Field(default=None, ge=0)
     currency: str = Field(min_length=3, max_length=3)
     fees: Decimal = Field(default=Decimal("0"), ge=0)
     taxes: Decimal = Field(default=Decimal("0"), ge=0)
@@ -138,18 +139,38 @@ class Transaction(DomainModel):
             TransactionType.DIVIDEND, TransactionType.JCP,
             TransactionType.INTEREST, TransactionType.COUPON,
             TransactionType.AMORTIZATION, TransactionType.TAX,
-            TransactionType.FEE, TransactionType.TRANSFER_IN,
-            TransactionType.TRANSFER_OUT,
+            TransactionType.FEE,
         }
         if self.transaction_type in trade_types:
             if not self.instrument_id or self.quantity is None or self.unit_price is None:
                 raise ValueError("BUY/SELL exigem instrument_id, quantity e unit_price.")
-        if self.transaction_type in cash_types and self.amount is None:
-            raise ValueError(f"{self.transaction_type.value} exige amount.")
-        if self.transaction_type in {TransactionType.SPLIT, TransactionType.BONUS}:
+        if self.transaction_type in cash_types and (self.amount is None or self.amount <= 0):
+            raise ValueError(f"{self.transaction_type.value} exige amount positivo.")
+        if self.transaction_type in trade_types and self.amount is not None and self.amount <= 0:
+            raise ValueError("BUY/SELL amount deve ser positivo quando informado.")
+        if self.transaction_type == TransactionType.SPLIT:
+            if not self.instrument_id:
+                raise ValueError("SPLIT exige instrument_id.")
+            try:
+                ratio = Decimal(str(self.metadata["ratio"]))
+            except (KeyError, TypeError, ValueError, InvalidOperation):
+                raise ValueError("SPLIT exige metadata.ratio numérico.") from None
+            if not ratio.is_finite() or ratio <= 0:
+                raise ValueError("SPLIT metadata.ratio deve ser finito e positivo.")
+        if self.transaction_type == TransactionType.BONUS:
             if not self.instrument_id or self.quantity is None:
-                raise ValueError("SPLIT/BONUS exigem instrument_id e quantity.")
+                raise ValueError("BONUS exige instrument_id e quantity.")
+        if self.transaction_type == TransactionType.AMORTIZATION and not self.instrument_id:
+            raise ValueError("AMORTIZATION exige instrument_id.")
         if self.transaction_type in {TransactionType.TRANSFER_IN, TransactionType.TRANSFER_OUT}:
             if not self.transfer_id:
                 raise ValueError("Transferências internas exigem transfer_id.")
+            if self.amount is None:
+                raise ValueError("Transferências exigem amount (valor em dinheiro ou custo transferido).")
+            if self.instrument_id is None and self.amount <= 0:
+                raise ValueError("Transferência em dinheiro exige amount positivo.")
+            if self.instrument_id is not None and self.quantity is None:
+                raise ValueError("Transferência de ativo exige quantity.")
+            if self.instrument_id is None and self.quantity is not None:
+                raise ValueError("Transferência em dinheiro não deve informar quantity.")
         return self

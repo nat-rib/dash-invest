@@ -55,7 +55,7 @@ def _transaction_from_row(row: sqlite3.Row) -> Transaction:
     return Transaction(
         id=row["id"], portfolio_id=row["portfolio_id"],
         transaction_type=row["transaction_type"],
-        occurred_at=datetime.fromisoformat(row["occurred_at"]),
+        occurred_at=datetime.fromisoformat(row["occurred_at"]), sequence=row["sequence"],
         institution=row["institution"], instrument_id=row["instrument_id"],
         currency=row["currency"], transfer_id=row["transfer_id"],
         external_id=row["external_id"], notes=row["notes"],
@@ -192,12 +192,12 @@ class TransactionRepository:
         with self.database.transaction() as connection:
             connection.execute(
                 """INSERT INTO transactions (
-                       id, portfolio_id, transaction_type, occurred_at, institution,
+                       id, portfolio_id, transaction_type, occurred_at, sequence, institution,
                        instrument_id, quantity, unit_price, amount, currency, fees, taxes,
                        transfer_id, external_id, notes, metadata_json
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (transaction.id, transaction.portfolio_id, transaction.transaction_type.value,
-                 _utc_iso(transaction.occurred_at), transaction.institution, transaction.instrument_id,
+                 _utc_iso(transaction.occurred_at), transaction.sequence, transaction.institution, transaction.instrument_id,
                  str(transaction.quantity) if transaction.quantity is not None else None,
                  str(transaction.unit_price) if transaction.unit_price is not None else None,
                  str(transaction.amount) if transaction.amount is not None else None,
@@ -227,7 +227,7 @@ class TransactionRepository:
         if end is not None:
             query += " AND occurred_at <= ?"
             parameters.append(_utc_iso(end))
-        query += " ORDER BY occurred_at, id"
+        query += " ORDER BY occurred_at, sequence, id"
         with self.database.connection() as connection:
             rows = connection.execute(query, parameters).fetchall()
         return [_transaction_from_row(row) for row in rows]
