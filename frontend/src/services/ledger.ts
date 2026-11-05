@@ -68,3 +68,67 @@ export function confirmTransfer(
     confirmation_source: confirmationSource,
   });
 }
+
+// ---- Rentabilidade (Fase 2) ----
+
+export interface PerformanceFlows {
+  portfolio_id: string;
+  portfolio_name: string;
+  currency: string | null;
+  flows: { date: string; amount: string; currency: string }[];
+  unavailable_reason: string | null;
+}
+
+export interface XirrResult {
+  annual_rate: string;
+  terminal_value: string;
+  terminal_date: string;
+  flows_used: number;
+}
+
+export interface TwrPeriod {
+  start_date: string;
+  end_date: string;
+  start_value: string;
+  end_value_after_flows: string;
+  net_external_flow: string;
+}
+
+export interface TwrValuations {
+  portfolio_id: string;
+  currency: string;
+  periods: TwrPeriod[];
+  saved: number;
+}
+
+export interface TwrResult {
+  rate: string;
+  periods: number;
+  start_date: string;
+  end_date: string;
+}
+
+export function fetchPerformanceFlows(): Promise<PerformanceFlows> {
+  return getJson(`${BASE}/performance/flows`);
+}
+
+export function calculateXirr(terminalValue: string, terminalDate: string): Promise<XirrResult> {
+  return sendJson(`${BASE}/performance/xirr/calculate`, "POST", {
+    terminal_value: terminalValue,
+    terminal_date: terminalDate,
+  });
+}
+
+export function fetchTwrValuations(): Promise<TwrValuations> {
+  return getJson(`${BASE}/performance/twr`);
+}
+
+export function saveTwrValuations(periods: TwrPeriod[]): Promise<TwrValuations> {
+  return sendJson(`${BASE}/performance/valuations`, "POST", { periods });
+}
+
+export function calculateTwr(periods?: TwrPeriod[]): Promise<TwrResult> {
+  return sendJson(`${BASE}/performance/twr/calculate`, "POST", {
+    periods: periods ?? null,
+  });
+}

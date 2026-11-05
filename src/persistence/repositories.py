@@ -391,3 +391,87 @@ class TransferLinkRepository:
             )
             for row in rows
         ]
+
+
+@dataclass(frozen=True)
+class PerformancePeriod:
+    """Período TWR informado explicitamente pelo usuário.
+
+    end_value_after_flows deve ser observado imediatamente após o fluxo
+    externo do fim do período; nada é inferido de snapshots isolados.
+    """
+
+    portfolio_id: str
+    start_date: date
+    end_date: date
+    start_value: Decimal
+    end_value_after_flows: Decimal
+    net_external_flow: Decimal
+    currency: str
+
+    def to_domain_period(self) -> Any:
+        from src.domain.performance import TwrPeriod
+
+        return TwrPeriod(
+            start_date=self.start_date,
+            end_date=self.end_date,
+            start_value=self.start_value,
+            end_value_after_flows=self.end_value_after_flows,
+            net_external_flow=self.net_external_flow,
+        )
+
+    @classmethod
+    def from_domain_period(cls, twr, *, portfolio_id: str, currency: str) -> "PerformancePeriod":
+        return cls(
+            portfolio_id=portfolio_id,
+            start_date=twr.start_date,
+            end_date=twr.end_date,
+            start_value=twr.start_value,
+            end_value_after_flows=twr.end_value_after_flows,
+            net_external_flow=twr.net_external_flow,
+            currency=currency,
+        )
+
+
+class PerformancePeriodRepository:
+    """Cadastro explícito de períodos TWR; substituição completa por carteira."""
+
+    def __init__(self, database: SQLiteDatabase):
+        self.database = database
+
+    def replace_all(self, portfolio_id: str, periods: list[PerformancePeriod]) -> int:
+        with self.database.transaction() as connection:
+            connection.execute(
+                "DELETE FROM performance_periods WHERE portfolio_id = ?", (portfolio_id,)
+            )
+            for period in periods:
+                connection.execute(
+                    """INSERT INTO performance_periods (
+                           portfolio_id, start_date, end_date, start_value,
+                           end_value_after_flows, net_external_flow, currency
+                       ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (period.portfolio_id, period.start_date.isoformat(), period.end_date.isoformat(),
+                     str(period.start_value), str(period.end_value_after_flows),
+                     str(period.net_external_flow), period.currency.upper()),
+                )
+        return len(periods)
+
+    def list_for_portfolio(self, portfolio_id: str) -> list[PerformancePeriod]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """SELECT * FROM performance_periods WHERE portfolio_id = ?
+                   ORDER BY start_date, end_date""",
+                (portfolio_id,),
+            ).fetchall()
+        return [
+            PerformancePeriod(
+                portfolio_id=row["portfolio_id"],
+                start_date=date.fromisoformat(row["start_date"]),
+                end_date=date.fromisoformat(row["end_date"]),
+                start_value=Decimal(row["start_value"]),
+                end_value_after_flows=Decimal(row["end_value_after_flows"]),
+                net_external_flow=Decimal(row["net_external_flow"]),
+                currency=row["currency"],
+            )
+            for row in rows
+        ]

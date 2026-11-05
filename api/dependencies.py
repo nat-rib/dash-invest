@@ -11,7 +11,7 @@ from src.importers.transactions_csv import CanonicalTransactionCsvImporter
 from src.persistence.database import SQLiteDatabase
 from src.persistence.repositories import (
     InstrumentRepository, PortfolioPositionRepository, PortfolioRepository,
-    TransactionRepository, TransferLinkRepository,
+    PerformancePeriodRepository, TransactionRepository, TransferLinkRepository,
 )
 from src.persistence.snapshot_import import PortfolioSnapshotImporter
 
@@ -33,6 +33,7 @@ class Repositories:
         self.positions = PortfolioPositionRepository(database)
         self.transactions = TransactionRepository(database)
         self.transfer_links = TransferLinkRepository(database)
+        self.performance_periods = PerformancePeriodRepository(database)
         self.snapshot_importer = PortfolioSnapshotImporter(database)
 
     def transactions_importer(self) -> CanonicalTransactionCsvImporter:

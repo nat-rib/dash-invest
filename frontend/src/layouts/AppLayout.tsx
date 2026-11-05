@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 const NAV = [
   { to: "/", label: "Visão geral", icon: "🏠" },
   { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
+  { to: "/performance", label: "Rentabilidade", icon: "📈" },
 ];
 
 export default function AppLayout() {
