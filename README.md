@@ -19,6 +19,31 @@ O servidor foi configurado para ouvir somente em `127.0.0.1` e as estatísticas 
 
 Use `portfolio.example.json` como referência: todo o conteúdo é fictício. Nunca versione seu `portfolio.json` real.
 
+## Stack React + FastAPI (migração em andamento)
+
+As telas estão sendo migradas para React + TypeScript conforme o
+[roadmap](docs/ROADMAP_REACT_MIGRATION.md); as regras financeiras continuam nos
+módulos `src/` e são expostas pela API em `api/`. Nesta etapa (Fases 0 e 1),
+o **Ledger e operações** já opera na interface React e o container único serve
+o frontend compilado pelo FastAPI.
+
+Desenvolvimento local do frontend:
+
+```bash
+uvicorn api.main:app --port 8501   # API + static do build
+cd frontend && npm install && npm run dev   # Vite em http://localhost:5173 (proxy /api → 8501)
+cd frontend && npm run build       # gera frontend/dist servido pelo FastAPI
+```
+
+Run local com a interface React servida pelo FastAPI:
+
+```bash
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
+```
+
+O Streamlit (`python -m streamlit run app.py`) continua disponível com as
+demais páginas até confirmar a paridade funcional.
+
 ## Interface e fontes de dados\n\nA Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.\n\nA navegação é centralizada em `app.py`; estilos responsivos compartilhados ficam em `src/ui/theme.py`. A adaptação completa de tabelas e a validação em larguras/dispositivos reais seguem no roadmap da Fase 1.\n\n## Dados e cálculos
 
 - Classes aceitas: `acao`, `fii`, `renda_fixa`, `etf`, `exterior`, `cripto`, `fundo`, `outros`, `caixa` e `credito_privado_coletivo`.

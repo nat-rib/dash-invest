@@ -1,6 +1,6 @@
 # Roadmap: migração das telas para React + FastAPI
 
-**Status:** planejamento  
+**Status:** em implementação — Fase 0 (fundação) e Fase 1 (Ledger) concluídas; demais fases pendentes.  
 **Branch de referência:** `develop`  
 **Objetivo:** migrar todas as funcionalidades da interface Streamlit para React + TypeScript, mantendo as regras de negócio e cálculos financeiros no backend Python.
 
@@ -45,6 +45,15 @@ frontend/src/
 A estrutura é uma proposta de organização. Antes de criar módulos, verificar o código existente e reutilizar serviços e repositórios; evitar duplicar lógica.
 
 ## 3. Fases de implementação
+
+> **Progresso:** Fase 0 entregou `api/` (FastAPI, schemas Pydantic, camada de
+> serviços, healthcheck, OpenAPI) e o esqueleto React em `frontend/` com
+> navegação real. A Fase 1 entregou os endpoints de Ledger
+> (`transactions` com paginação/filtros, `instruments`, `snapshot/preview|import`,
+> `csv/preview|import`, `transfers/suggestions|confirm`, `state`), a tela
+> React `frontend/src/pages/LedgerPage.tsx` e testes de integração em
+> `tests/test_api_ledger.py`. A migração do snapshot permanece idempotente,
+> a prévia de CSV não persiste e nenhuma conciliação acontece sem confirmação.
 
 ### Fase 0 — Fundação da API e contratos
 

@@ -108,13 +108,12 @@ def _type(value: str, aliases: dict[str, str], line: int) -> str:
     return target
 
 
-def adapt_broker_csv(
-    content: str,
-    *,
-    portfolio_id: str,
-    mapping: BrokerCsvMapping,
-    importer: CanonicalTransactionCsvImporter,
-) -> TransactionCsvImportResult:
+def to_canonical_csv(content: str, *, mapping: BrokerCsvMapping) -> str:
+    """Normaliza o extrato para o CSV canônico, validando layout e mapeamento.
+
+    Não persiste nada; a persistência é responsabilidade do importador canônico,
+    garantindo prévia e confirmação com as mesmas regras.
+    """
     if not mapping.institution.strip():
         raise TransactionCsvImportError("Informe a instituição.")
     reader = csv.DictReader(StringIO(content.lstrip("\ufeff")), delimiter=mapping.delimiter)
@@ -186,4 +185,17 @@ def adapt_broker_csv(
 
     if not synthetic_counts and output.getvalue().count("\n") <= 1:
         raise TransactionCsvImportError("O CSV não contém operações.")
-    return importer.import_text(output.getvalue(), portfolio_id=portfolio_id)
+    return output.getvalue()
+
+
+def adapt_broker_csv(
+    content: str,
+    *,
+    portfolio_id: str,
+    mapping: BrokerCsvMapping,
+    importer: CanonicalTransactionCsvImporter,
+) -> TransactionCsvImportResult:
+    """Conveniência compatível: adapta, valida e persiste em uma chamada."""
+    return importer.import_text(
+        to_canonical_csv(content, mapping=mapping), portfolio_id=portfolio_id
+    )

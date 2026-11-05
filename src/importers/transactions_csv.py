@@ -54,7 +54,12 @@ class CanonicalTransactionCsvImporter:
     def __init__(self, repository: TransactionRepository):
         self.repository = repository
 
-    def import_text(self, content: str, *, portfolio_id: str) -> TransactionCsvImportResult:
+    def parse_text(self, content: str, *, portfolio_id: str) -> list[Transaction]:
+        """Valida o arquivo inteiro e devolve eventos tipados, sem persistir.
+
+        Prévias e importações compartilham exatamente as mesmas regras de
+        validação; a persistência é uma etapa separada e atômica.
+        """
         reader = csv.DictReader(StringIO(content.lstrip("\ufeff")))
         columns = set(reader.fieldnames or [])
         missing = REQUIRED_COLUMNS - columns
@@ -139,6 +144,10 @@ class CanonicalTransactionCsvImporter:
 
         if not transactions:
             raise TransactionCsvImportError("O CSV não contém transações.")
+        return transactions
+
+    def import_text(self, content: str, *, portfolio_id: str) -> TransactionCsvImportResult:
+        transactions = self.parse_text(content, portfolio_id=portfolio_id)
         inserted, skipped = self.repository.append_many(transactions)
         return TransactionCsvImportResult(
             parsed=len(transactions), inserted=inserted, skipped_duplicates=skipped

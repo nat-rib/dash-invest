@@ -246,21 +246,60 @@ class TransactionRepository:
         self, portfolio_id: str, *, instrument_id: str | None = None,
         start: datetime | None = None, end: datetime | None = None,
     ) -> list[Transaction]:
-        query = "SELECT * FROM transactions WHERE portfolio_id = ?"
+        rows = self._query(portfolio_id, instrument_id=instrument_id, start=start, end=end)
+        return [_transaction_from_row(row) for row in rows]
+
+    def search(
+        self, portfolio_id: str, *,
+        instrument_id: str | None = None, institution: str | None = None,
+        transaction_type: str | None = None, start: datetime | None = None,
+        end: datetime | None = None, limit: int | None = None, offset: int = 0,
+    ) -> tuple[list[Transaction], int]:
+        """Página do ledger com filtros e total, evitando carregar tudo de uma vez."""
+        rows, total = self._query(
+            portfolio_id, instrument_id=instrument_id, institution=institution,
+            transaction_type=transaction_type, start=start, end=end,
+            limit=limit, offset=offset, count=True,
+        )
+        return [_transaction_from_row(row) for row in rows], total
+
+    def _query(
+        self, portfolio_id: str, *,
+        instrument_id: str | None = None, institution: str | None = None,
+        transaction_type: str | None = None, start: datetime | None = None,
+        end: datetime | None = None, limit: int | None = None, offset: int = 0,
+        count: bool = False,
+    ):
+        clauses = ["portfolio_id = ?"]
         parameters: list[Any] = [portfolio_id]
         if instrument_id is not None:
-            query += " AND instrument_id = ?"
+            clauses.append("instrument_id = ?")
             parameters.append(instrument_id)
+        if institution is not None:
+            clauses.append("institution = ?")
+            parameters.append(institution)
+        if transaction_type is not None:
+            clauses.append("transaction_type = ?")
+            parameters.append(transaction_type)
         if start is not None:
-            query += " AND occurred_at >= ?"
+            clauses.append("occurred_at >= ?")
             parameters.append(_utc_iso(start))
         if end is not None:
-            query += " AND occurred_at <= ?"
+            clauses.append("occurred_at <= ?")
             parameters.append(_utc_iso(end))
-        query += " ORDER BY occurred_at, sequence, id"
+        where = " AND ".join(clauses)
         with self.database.connection() as connection:
+            total = 0
+            if count:
+                total = int(connection.execute(
+                    f"SELECT COUNT(*) FROM transactions WHERE {where}", parameters,
+                ).fetchone()[0])
+            query = f"SELECT * FROM transactions WHERE {where} ORDER BY occurred_at, sequence, id"
+            if limit is not None:
+                query += " LIMIT ? OFFSET ?"
+                parameters.extend([limit, max(offset, 0)])
             rows = connection.execute(query, parameters).fetchall()
-        return [_transaction_from_row(row) for row in rows]
+        return (rows, total) if count else rows
 
 
 @dataclass(frozen=True)
