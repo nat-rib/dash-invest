@@ -1,97 +1,183 @@
 import { useEffect, useState } from "react";
-import { Card, ErrorBox, Loading } from "../components/ui";
-import { getJson } from "../services/api";
-
-interface Allocation {
-  total_brl: string;
-  known_positions: number;
-  unknown_positions: number;
-  by_institution: { name: string; value: string; share: string | null; positions: number }[];
-}
-
-interface LedgerState {
-  instruments_count: number;
-  transactions_count: number;
-  snapshots_count: number;
-  database_path: string;
-}
+import {
+  AllocationBars, MetricCard, OpportunityCard, PositionCard, QualityBadge,
+} from "../components/insights";
+import { Card, EmptyState, ErrorBox, Loading } from "../components/ui";
+import { fetchOverview } from "../services/overview";
+import type { Overview } from "../services/overview";
 
 export default function DashboardPage() {
-  const [allocation, setAllocation] = useState<Allocation | null>(null);
-  const [state, setState] = useState<LedgerState | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      getJson<Allocation>("/api/analysis/allocation").catch(() => null),
-      getJson<LedgerState>("/api/ledger/state").catch(() => null),
-    ])
-      .then(([alloc, ledgerState]) => {
-        if (alloc) setAllocation(alloc);
-        if (ledgerState) setState(ledgerState);
-        if (!alloc && !ledgerState) {
-          setError("Nem o snapshot nem o ledger estão disponíveis neste ambiente.");
-        }
+    let active = true;
+    fetchOverview()
+      .then((data) => {
+        if (active) setOverview(data);
       })
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : String(err));
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
     <div className="page">
       <header className="page-header">
-        <h1>Visão geral</h1>
+        <div className="page-header-title">
+          <h1>Visão geral</h1>
+          {overview && (
+            <QualityBadge
+              level={overview.quality.level}
+              message={overview.quality.message}
+            />
+          )}
+        </div>
         <p className="muted">
-          Patrimônio consolidado a partir do snapshot JSON (fonte: PORTFOLIO_PATH); o ledger SQLite
-          é fonte separada e não é combinado automaticamente.
+          Patrimônio conhecido do snapshot JSON (PORTFOLIO_PATH). O ledger SQLite
+          é uma fonte separada e não é combinado automaticamente.
         </p>
       </header>
+
       {error && <ErrorBox message={error} />}
-      {!allocation && !state && !error && <Card><Loading /></Card>}
-      <div className="metric-grid">
-        {allocation && (
-          <Card title="Patrimônio consolidado BRL">
-            {parseFloat(allocation.total_brl).toLocaleString("pt-BR", {
-              style: "currency", currency: "BRL",
-            })}
-          </Card>
-        )}
-        {allocation && <Card title="Posições conhecidas">{allocation.known_positions}</Card>}
-        {allocation && <Card title="Sem valor consolidado">{allocation.unknown_positions}</Card>}
-        {state && <Card title="Transações no ledger">{state.transactions_count}</Card>}
-      </div>
-      {allocation && allocation.by_institution.length > 0 && (
-        <Card title="Por instituição (valores conhecidos em BRL)">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Instituição</th><th>Valor BRL</th><th>Participação</th><th>Posições</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocation.by_institution.map((slice) => (
-                  <tr key={slice.name}>
-                    <td>{slice.name}</td>
-                    <td>{parseFloat(slice.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                    <td>
-                      {slice.share === null ? "—" : `${(parseFloat(slice.share) * 100).toFixed(1)}%`}
-                    </td>
-                    <td>{slice.positions}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      {!overview && !error && <Card><Loading /></Card>}
+      {overview && !overview.snapshot.available && overview.snapshot.error && (
+        <ErrorBox message={overview.snapshot.error} />
       )}
-      {state && (
-        <Card>
-          <p className="muted">
-            Ledger: {state.instruments_count} instrumentos · {state.snapshots_count} snapshots
-            persistidos · banco em {state.database_path}.
-          </p>
-        </Card>
+
+      {overview && (
+        <>
+          <div className="metric-grid">
+            <MetricCard
+              label="Patrimônio consolidado BRL"
+              value={overview.total_brl === null ? "Não disponível" : brl(overview.total_brl)}
+              hint={
+                overview.snapshot.snapshot_date
+                  ? `Snapshot de ${formatDate(overview.snapshot.snapshot_date)}`
+                  : "Snapshot indisponível"
+              }
+              unavailable={overview.total_brl === null}
+            />
+            <MetricCard
+              label="Rentabilidade disponível"
+              value={
+                overview.performance.available && overview.performance.rate !== null
+                  ? `${(parseFloat(overview.performance.rate) * 100).toFixed(2)}%`
+                  : "Não disponível"
+              }
+              hint={
+                overview.performance.available
+                  ? `${overview.performance.metric} · ${formatDate(overview.performance.start_date)} a ${formatDate(overview.performance.end_date)} · ${overview.performance.periods ?? 0} período(s)`
+                  : overview.performance.reason ?? "Cadastre fluxos e avaliações."
+              }
+              unavailable={!overview.performance.available}
+            />
+            <MetricCard
+              label="Benchmark"
+              value={overview.benchmark.available ? overview.benchmark.name ?? "Disponível" : "Indisponível"}
+              hint={overview.benchmark.reason ?? "Sem série comparável."}
+              unavailable={!overview.benchmark.available}
+            />
+            <MetricCard
+              label="Cobertura do snapshot"
+              value={`${overview.known_positions}/${overview.positions_count}`}
+              hint={`${overview.unknown_positions} sem valor consolidado em BRL`}
+              tone={overview.quality.level === "partial" ? "warn" : undefined}
+            />
+          </div>
+
+          {overview.alerts.length > 0 && (
+            <section className="insight-grid" aria-label="Alertas da carteira">
+              {overview.alerts.map((alert) => (
+                <OpportunityCard
+                  key={alert.id}
+                  tone={alert.tone}
+                  title={alert.title}
+                >
+                  {alert.message}
+                </OpportunityCard>
+              ))}
+            </section>
+          )}
+
+          <div className="split-two">
+            <Card title="Distribuição por classe">
+              <AllocationBars slices={overview.by_class} />
+            </Card>
+            <Card title="Distribuição por instituição">
+              <AllocationBars slices={overview.by_institution} />
+            </Card>
+          </div>
+
+          <Card title="Maiores posições">
+            {overview.top_positions.length === 0 ? (
+              <EmptyState title="Nenhuma posição com valor consolidado em BRL." />
+            ) : (
+              <div className="position-list">
+                {overview.top_positions.map((position) => (
+                  <PositionCard
+                    key={position.index}
+                    name={position.name}
+                    institution={position.institution}
+                    assetClass={position.asset_class}
+                    value={brl(position.consolidated_brl)}
+                    share={position.share}
+                    riskCategory={position.risk_category}
+                    concentrationLevel={position.concentration_level}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card title="Qualidade e ledger">
+            <div className="detail-metrics">
+              <div className="metric-box">
+                <span className="metric-label">Cobertura</span>
+                <span className="metric-value">
+                  {overview.known_positions}/{overview.positions_count}
+                </span>
+              </div>
+              <div className="metric-box">
+                <span className="metric-label">Sem valor BRL</span>
+                <span className="metric-value">{overview.unknown_positions}</span>
+              </div>
+              <div className="metric-box">
+                <span className="metric-label">Transações no ledger</span>
+                <span className="metric-value">{overview.ledger.transactions_count}</span>
+              </div>
+              <div className="metric-box">
+                <span className="metric-label">Transferências pendentes</span>
+                <span className="metric-value">{overview.ledger.unlinked_transfer_events}</span>
+              </div>
+            </div>
+            <p className="muted">{overview.quality.message}</p>
+            <p className="muted">
+              Ledger: {overview.ledger.instruments_count} instrumentos ·{" "}
+              {overview.ledger.snapshots_count} snapshots persistidos · banco em{" "}
+              {overview.ledger.database_path}.
+            </p>
+          </Card>
+        </>
       )}
     </div>
   );
+}
+
+function brl(value: string): string {
+  const parsed = parseFloat(value);
+  if (!Number.isFinite(parsed)) return value;
+  return parsed.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  const [year, month, day] = value.slice(0, 10).split("-");
+  return `${day}/${month}/${year}`;
 }

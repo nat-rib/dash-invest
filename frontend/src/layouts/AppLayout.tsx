@@ -1,16 +1,37 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
-const NAV = [
-  { to: "/", label: "Visão geral", icon: "🏠" },
-  { to: "/carteira", label: "Posições", icon: "💼" },
-  { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
-  { to: "/performance", label: "Rentabilidade", icon: "📈" },
-  { to: "/analysis", label: "Análise", icon: "📊" },
-  { to: "/historico", label: "Histórico patrimonial", icon: "🕒" },
-  { to: "/mercado", label: "Cotações", icon: "💹" },
-  { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
-  { to: "/import", label: "Importar carteira", icon: "📥" },
+const NAV_GROUPS = [
+  {
+    label: "Visão geral",
+    items: [{ to: "/", label: "Visão geral", icon: "🏠" }],
+  },
+  {
+    label: "Minha carteira",
+    items: [
+      { to: "/carteira", label: "Posições", icon: "💼" },
+      { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
+      { to: "/performance", label: "Rentabilidade", icon: "📈" },
+    ],
+  },
+  {
+    label: "Investigar",
+    items: [
+      { to: "/analysis", label: "Análise", icon: "📊" },
+      { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
+    ],
+  },
+  {
+    label: "Mercado",
+    items: [
+      { to: "/historico", label: "Histórico patrimonial", icon: "🕒" },
+      { to: "/mercado", label: "Cotações", icon: "💹" },
+    ],
+  },
+  {
+    label: "Configurações",
+    items: [{ to: "/import", label: "Importar carteira", icon: "📥" }],
+  },
 ];
 
 type Theme = "dark" | "light";
@@ -131,16 +152,21 @@ export default function AppLayout() {
           </button>
         </div>
         <nav aria-label="Navegação principal">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
-              onClick={() => setMenuOpen(false)}
-              end
-            >
-              <span aria-hidden="true">{item.icon}</span> {item.label}
-            </NavLink>
+          {NAV_GROUPS.map((group) => (
+            <div className="nav-group" key={group.label}>
+              <span className="nav-group-label">{group.label}</span>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+                  onClick={() => setMenuOpen(false)}
+                  end
+                >
+                  <span aria-hidden="true">{item.icon}</span> {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-footer">

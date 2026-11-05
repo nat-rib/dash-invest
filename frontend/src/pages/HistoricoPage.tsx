@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ResponsiveChart } from "../components/insights";
 import { Card, EmptyState, ErrorBox, Loading, SelectInput, Table } from "../components/ui";
 import { getJson } from "../services/api";
 
@@ -81,7 +82,16 @@ export default function HistoricoPage() {
       {history && history.points.length > 0 && (
         <>
           <Card title="Patrimônio consolidado em BRL">
-            <LineChart points={history.points.map((point) => ({ label: point.captured_at, value: point.total_brl }))} />
+            <ResponsiveChart
+              ariaLabel="Patrimônio consolidado em BRL ao longo do histórico"
+              points={history.points.map((point) => ({
+                label: point.captured_at,
+                value: point.total_brl,
+              }))}
+              formatValue={(value) => value.toLocaleString("pt-BR", {
+                style: "currency", currency: "BRL",
+              })}
+            />
             {change !== null && (
               <p>
                 Variação entre primeiro e último snapshot: <strong>{(change * 100).toFixed(2)}%</strong>
@@ -114,11 +124,15 @@ export default function HistoricoPage() {
                 </div>
               </div>
               {series && series.length > 0 && (
-                <LineChart
+                <ResponsiveChart
+                  ariaLabel={`Evolução do valor em BRL da posição ${selected}`}
                   points={series.map((point) => ({
                     label: point.captured_at,
                     value: point.value_brl ?? point.current_value ?? 0,
                   }))}
+                  formatValue={(value) => value.toLocaleString("pt-BR", {
+                    style: "currency", currency: "BRL",
+                  })}
                 />
               )}
               {series !== null && series.length === 0 && (
@@ -135,35 +149,4 @@ export default function HistoricoPage() {
 function ErrorBoxRender({ error }: { error: string | null }) {
   if (!error) return null;
   return <ErrorBox message={error} />;
-}
-
-function LineChart({ points }: { points: { label: string; value: number }[] }) {
-  if (points.length === 0) return null;
-  const values = points.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const width = 100;
-  const height = 40;
-  const coordinates = points.map((point, index) => {
-    const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-    const y = points.length === 1 ? height / 2 : height - ((point.value - min) / span) * height;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  });
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="line-chart" role="img" aria-label="Série histórica">
-      <polyline
-        points={coordinates.join(" ")}
-        fill="none"
-        stroke="var(--chart-1)"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      {coordinates.map((coordinate, index) => {
-        const [x, y] = coordinate.split(",").map(parseFloat);
-        return <circle key={index} cx={x} cy={y} r={points.length === 1 ? 1.6 : 0.8} fill="var(--chart-1)" />;
-      })}
-    </svg>
-  );
 }

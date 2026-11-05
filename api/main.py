@@ -16,7 +16,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api import config
-from api.routes import analysis, import_snapshot, ledger, market, mortgage, performance
+from api.routes import (
+    analysis, import_snapshot, ledger, market, mortgage, overview, performance,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(performance.router)
     app.include_router(import_snapshot.router)
     app.include_router(analysis.router)
+    app.include_router(overview.router)
     app.include_router(market.router)
     app.include_router(mortgage.router)
 

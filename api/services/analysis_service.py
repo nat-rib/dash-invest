@@ -22,6 +22,11 @@ def _snapshot():
     return load_snapshot(path)
 
 
+def current_snapshot():
+    """Snapshot atual já validado; usado por serviços que precisam dos metadados."""
+    return _snapshot()
+
+
 def _consolidated_brl(position) -> tuple[Decimal | None, bool]:
     """Valor consolidado em BRL; None quando não comparável e sem conversão."""
     value = position_value(position)

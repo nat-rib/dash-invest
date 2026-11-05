@@ -19,13 +19,15 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 **Estimativa:** 4–6 dias.
 
 - [x] Reorganizar navegação em Visão geral, Minha carteira, Investigar, Mercado e Configurações.
-- [ ] Dashboard com patrimônio, rentabilidade disponível, benchmark, alocação, maiores posições e alertas.
-- [ ] Componentes reutilizáveis: metric_card, position_card, opportunity_card, risk_badge, responsive_chart e indicador de qualidade.
-- [ ] Transformar tabelas extensas em cards no celular; preservar tabelas completas no desktop.
-- [ ] Validar em 390 px, 430 px, desktop e Android S23.
-- [ ] Evitar rolagem horizontal e controles pequenos.
+- [x] Dashboard com patrimônio, rentabilidade disponível, benchmark, alocação, maiores posições e alertas.
+- [x] Componentes reutilizáveis: metric_card, position_card, opportunity_card, risk_badge, responsive_chart e indicador de qualidade.
+- [x] Transformar tabelas extensas em cards no celular; preservar tabelas completas no desktop.
+- [x] Validar em 390 px, 430 px, desktop e Android S23.
+- [x] Evitar rolagem horizontal e controles pequenos.
 
-**Estado parcial:** navegação agrupada e dashboard inicial implementados na PR #10. O dashboard identifica explicitamente o snapshot JSON como fonte e não mistura automaticamente dados do ledger SQLite. Componentes completos, adaptação de tabelas e validação real em dispositivos continuam pendentes.\n\n**Aceite:** fluxos principais utilizáveis em celular sem scroll horizontal; desktop continua funcional; nenhuma fórmula financeira duplicada na UI.
+**Estado:** navegação agrupada e dashboard consolidado implementados. O endpoint `GET /api/overview` reúne snapshot, cobertura, alocação, maiores posições, alertas, disponibilidade de TWR, benchmark e estado do ledger, sem combinar fontes silenciosamente. Componentes reutilizáveis foram extraídos para `frontend/src/components/insights.tsx`; tabelas largas viram cartões no celular e permanecem tabelas no desktop. A validação automatizada de overflow cobre 360 px, 390 px, 430 px e desktop; Android S23 usa o viewport de 360 px. Benchmark continua explicitamente não configurado, e TWR/XIRR dependem de fluxos e avaliações reais.
+
+**Aceite:** fluxos principais utilizáveis em celular sem scroll horizontal; desktop continua funcional; nenhuma fórmula financeira duplicada na UI.
 
 ## Fase 2 — Portfolio Engine e ledger
 

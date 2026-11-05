@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AllocationBars } from "../components/insights";
 import {
   Card, EmptyState, ErrorBox, Loading, SelectInput, Table, Tabs,
 } from "../components/ui";
@@ -157,11 +158,11 @@ function AllocationTab() {
         <div className="split-two">
           <div>
             <h3>Distribuição por classe</h3>
-            <BarList slices={allocation.by_class} />
+            <AllocationBars slices={allocation.by_class} />
           </div>
           <div>
             <h3>Distribuição por instituição</h3>
-            <BarList slices={allocation.by_institution} />
+            <AllocationBars slices={allocation.by_institution} />
           </div>
         </div>
       </Card>
@@ -198,27 +199,6 @@ function AllocationTab() {
         </Table>
       </Card>
     </>
-  );
-}
-
-function BarList({ slices }: { slices: AllocationSlice[] }) {
-  if (slices.length === 0) {
-    return <EmptyState title="Sem posições com valor conhecido em BRL." />;
-  }
-  return (
-    <div className="bar-list">
-      {slices.map((slice) => {
-        const share = slice.share === null ? 0 : Math.max(parseFloat(slice.share), 0.01);
-        return (
-          <div className="bar-row" key={slice.name}>
-            <span className="bar-name">{slice.name} · {money(slice.value)} ({percent(slice.share)})</span>
-            <div className="bar-track">
-              <div className="bar-fill" style={{ width: `${Math.min(share * 100, 100)}%` }} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
