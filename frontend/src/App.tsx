@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
+import ImportPage from "./pages/ImportPage";
 import LedgerPage from "./pages/LedgerPage";
 import PerformancePage from "./pages/PerformancePage";
 
@@ -11,6 +12,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="performance" element={<PerformancePage />} />
+        <Route path="import" element={<ImportPage />} />
         <Route
           path="*"
           element={<p className="muted">Página não encontrada.</p>}

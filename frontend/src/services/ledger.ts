@@ -132,3 +132,36 @@ export function calculateTwr(periods?: TwrPeriod[]): Promise<TwrResult> {
     periods: periods ?? null,
   });
 }
+
+// ---- Importação de carteira (Fase 3) ----
+
+export interface ImportPreview {
+  snapshot_date: string;
+  currency: string;
+  positions: {
+    institution: string;
+    asset_class: string;
+    ticker: string | null;
+    name: string;
+    quantity: string | null;
+    currency: string;
+  }[];
+  duplicates: string[][];
+  valid: boolean;
+  validation_errors: string[];
+  message: string;
+}
+
+export interface ImportConfirm {
+  snapshot_date: string;
+  positions: number;
+  message: string;
+}
+
+export function previewImportSnapshot(file: File): Promise<ImportPreview> {
+  return sendForm(`${BASE}/import/snapshot/preview`, file, {});
+}
+
+export function confirmImportSnapshot(file: File): Promise<ImportConfirm> {
+  return sendForm(`${BASE}/import/snapshot/confirm`, file, { confirm_replacement: "true" });
+}

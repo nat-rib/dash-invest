@@ -278,6 +278,19 @@ tbody tr:hover {
   color: inherit;
 }
 
+.checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #3a4256;
+}
+
+.checkline input {
+  width: 16px;
+  height: 16px;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
