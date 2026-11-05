@@ -1,12 +1,46 @@
 import {useEffect,useMemo,useState} from "react";
 type Row={Nome:string;Ticker:string|null;Instituição:string;Classe:string;Moeda:string;"Valor consolidado BRL":number|null;"Valor atual":number|null;"Custo total":number|null;weight?:number|null};
+type HistoryData={wealth:Record<string,unknown>[];positions:Record<string,unknown>[];note:string};
 type Data={has_snapshot:boolean;message?:string;snapshot_date?:string;metrics?:{total_brl:number|null;assets:number;institutions:number;known_value:number;known_cost:number;converted:number};allocation?:{name:string;value:number;weight:number}[];institutions_data?:{name:string;value:number;weight:number}[];top_positions?:Row[];positions?:Row[]};
 const palette=["#a5d6a7","#70b69a","#e5c77c","#8ca9d5","#c39bd8","#df9c83"];
 const money=(v:number|null|undefined,c="BRL")=>v==null?"—":new Intl.NumberFormat("pt-BR",{style:"currency",currency:c,maximumFractionDigits:2}).format(v);
 const compact=(v:number)=>new Intl.NumberFormat("pt-BR",{notation:"compact",maximumFractionDigits:1}).format(v);
+function Analysis({data}:{data:Data|null}) {
+ const rows=(data?.positions||[]).filter(r=>r["Valor consolidado BRL"]!=null);
+ const comparable=rows.filter(r=>r["Custo total"]!=null&&r["Valor atual"]!=null&&r.Moeda==="BRL");
+ const total=data?.metrics?.total_brl||0;
+ return <><div className="heading"><div><small>COMPOSIÇÃO E CONCENTRAÇÃO</small><h1>Análise</h1><p>Distribuição do patrimônio conhecido em BRL, sem inferir retornos históricos.</p></div></div>
+ {!data?.has_snapshot?<div className="notice">Nenhum snapshot disponível.</div>:<>
+ <section className="metrics"><article className="metric featured"><label>PATRIMÔNIO CONHECIDO</label><strong>{money(total)}</strong></article><article className="metric"><label>CLASSES</label><strong>{data.allocation?.length||0}</strong></article><article className="metric"><label>INSTITUIÇÕES</label><strong>{data.institutions_data?.length||0}</strong></article><article className="metric"><label>POSIÇÕES COM VALOR</label><strong>{rows.length}</strong></article></section>
+ <section className="charts">{[["Por classe",data.allocation],["Por instituição",data.institutions_data]].map(([title,items])=><article className="panel" key={title as string}><h2>{title as string}</h2><div className="bars">{((items||[]) as {name:string;value:number;weight:number}[]).map((x,i)=><div key={x.name}><div><span>{x.name.replaceAll("_"," ")}</span><b>{money(x.value)} · {(x.weight*100).toFixed(1)}%</b></div><i><span style={{width:Math.max(0,Math.min(100,x.weight*100))+"%",background:palette[i%palette.length]}}/></i></div>)}</div></article>)}</section>
+ <article className="panel positions"><h2>Maiores posições e concentração</h2><div className="table-wrap"><table><thead><tr><th>Ativo</th><th>Instituição</th><th>Classe</th><th>Valor BRL</th><th>Concentração</th></tr></thead><tbody>{[...rows].sort((a,b)=>(b["Valor consolidado BRL"]||0)-(a["Valor consolidado BRL"]||0)).slice(0,10).map((r,i)=><tr key={i}><td>{r.Nome}</td><td>{r.Instituição}</td><td>{r.Classe}</td><td>{money(r["Valor consolidado BRL"])}</td><td>{total>0?((r["Valor consolidado BRL"]||0)/total*100).toFixed(1)+"%":"—"}</td></tr>)}</tbody></table></div></article>
+ <article className="panel positions"><h2>Custo de aquisição x valor atual</h2><p>Somente posições em BRL com custo e valor atual conhecidos e comparáveis.</p><div className="table-wrap"><table><thead><tr><th>Ativo</th><th>Custo</th><th>Valor atual</th><th>Diferença</th></tr></thead><tbody>{comparable.map((r,i)=><tr key={i}><td>{r.Nome}</td><td>{money(r["Custo total"])}</td><td>{money(r["Valor atual"])}</td><td>{money((r["Valor atual"]||0)-(r["Custo total"]||0))}</td></tr>)}</tbody></table></div>{!comparable.length&&<div className="empty">Nenhuma posição comparável.</div>}</article></>}</>;
+}
+function Details({data}:{data:Data|null}){
+ const [selected,setSelected]=useState("0");
+ const rows=data?.positions||[];const index=Math.min(Number(selected),Math.max(rows.length-1,0));const r=rows[index];
+ return <><div className="heading"><div><small>INFORMAÇÕES DA POSIÇÃO</small><h1>Detalhes do ativo</h1><p>Dados do snapshot, sem alterar o ledger.</p></div></div>
+ {!r?<div className="notice">Nenhuma posição disponível.</div>:<><article className="panel"><label>Selecione a posição　</label><select className="asset-select" value={index} onChange={e=>setSelected(e.target.value)}>{rows.map((p,i)=><option value={i} key={i}>{p.Nome} — {p.Instituição}</option>)}</select></article>
+ <section className="metrics details-metrics">{[["VALOR ATUAL",r["Valor atual"]],["CUSTO TOTAL",r["Custo total"]],["VALOR CONSOLIDADO BRL",r["Valor consolidado BRL"]]].map(([label,value])=><article className="metric" key={label as string}><label>{label as string}</label><strong>{money(value as number|null,label==="VALOR CONSOLIDADO BRL"?"BRL":r.Moeda)}</strong></article>)}</section>
+ <article className="panel positions"><h2>{r.Nome}</h2><div className="detail-grid">{Object.entries(r).filter(([k])=>k!=="weight").map(([key,value])=><div key={key}><small>{key}</small><b>{value==null||value===""?"Não disponível":typeof value==="number"?new Intl.NumberFormat("pt-BR",{maximumFractionDigits:6}).format(value):String(value)}</b></div>)}</div></article></>}</>;
+}
+function History({history,loading,error}:{history:HistoryData|null;loading:boolean;error:string}){
+ const [selected,setSelected]=useState("");const wealth=history?.wealth||[];const positions=history?.positions||[];
+ const keys=[...new Set(positions.map(r=>String(r["Posição"])))];const chosen=selected&&keys.includes(selected)?selected:keys[0];
+ const subset=positions.filter(r=>r["Posição"]===chosen);
+ const first=Number(wealth[0]?.["Patrimônio BRL"]),last=Number(wealth[wealth.length-1]?.["Patrimônio BRL"]);
+ return <><div className="heading"><div><small>EVOLUÇÃO PATRIMONIAL</small><h1>Histórico</h1><p>Snapshots registrados no banco histórico local.</p></div></div>
+ {loading?<div className="notice">Carregando histórico…</div>:error?<div className="notice">{error}</div>:!wealth.length?<div className="notice">Ainda não há snapshots históricos registrados.</div>:<>
+ <section className="metrics details-metrics"><article className="metric"><label>REGISTROS</label><strong>{wealth.length}</strong></article><article className="metric"><label>ÚLTIMO PATRIMÔNIO</label><strong>{money(last)}</strong></article><article className="metric"><label>VARIAÇÃO ENTRE SNAPSHOTS</label><strong>{first>0?((last/first-1)*100).toFixed(2)+"%":"—"}</strong></article></section>
+ <article className="panel positions"><h2>Patrimônio consolidado</h2><div className="table-wrap"><table><thead><tr><th>Data</th><th>Valor BRL</th><th>Origem</th></tr></thead><tbody>{wealth.map((r,i)=><tr key={i}><td>{String(r["Data"]||"")}</td><td>{money(Number(r["Patrimônio BRL"]))}</td><td>{String(r["Origem"]||"—")}</td></tr>)}</tbody></table></div></article>
+ <article className="panel positions"><h2>Evolução por posição</h2><select className="asset-select" value={chosen||""} onChange={e=>setSelected(e.target.value)}>{keys.map(k=><option key={k}>{k}</option>)}</select><div className="table-wrap"><table><thead><tr><th>Data</th><th>Valor BRL</th><th>Valor atual</th></tr></thead><tbody>{subset.map((r,i)=><tr key={i}><td>{String(r["Data"]||"")}</td><td>{r["Valor BRL"]==null?"—":money(Number(r["Valor BRL"]))}</td><td>{r["Valor atual"]==null?"—":money(Number(r["Valor atual"]),String(r["Moeda"]||"BRL"))}</td></tr>)}</tbody></table></div></article></>}
+ <footer>ⓘ　{history?.note||"Variação de patrimônio não equivale a rentabilidade."}</footer></>;
+}
 function App(){
+ const [history,setHistory]=useState<HistoryData|null>(null),[historyLoading,setHistoryLoading]=useState(false),[historyError,setHistoryError]=useState("");
  const [data,setData]=useState<Data|null>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true),[page,setPage]=useState("Visão geral"),[search,setSearch]=useState("");
  useEffect(()=>{fetch("/api/overview").then(r=>{if(!r.ok)throw Error("Falha ao carregar carteira");return r.json()}).then(setData).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{if(page!=="Histórico"||history||historyLoading)return;setHistoryLoading(true);fetch("/api/history").then(r=>{if(!r.ok)throw Error("Falha ao carregar histórico");return r.json()}).then(setHistory).catch(e=>setHistoryError(e.message)).finally(()=>setHistoryLoading(false))},[page,history,historyLoading]);
  const rows=useMemo(()=>data?.positions?.filter(p=>[p.Nome,p.Ticker||"",p.Instituição,p.Classe].join(" ").toLowerCase().includes(search.toLowerCase()))||[],[data,search]);
  const nav=["Visão geral","Carteira","Análise","Detalhes","Ledger","Rentabilidade","Mercado","Histórico","Importação","Amortização"];
  const total=data?.metrics?.total_brl||0;
