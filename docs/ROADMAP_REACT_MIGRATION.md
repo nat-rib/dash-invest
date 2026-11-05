@@ -1,6 +1,6 @@
 # Roadmap: migração das telas para React + FastAPI
 
-**Status:** em implementação — Fase 0 (fundação) e Fase 1 (Ledger) concluídas; demais fases pendentes.  
+**Status:** em implementação — todas as fases (0 a 6) migradas para React + FastAPI em `develop`; pendências operacionais: validação user-facing, remoção do Streamlit e validação pós-deploy.  
 **Branch de referência:** `develop`  
 **Objetivo:** migrar todas as funcionalidades da interface Streamlit para React + TypeScript, mantendo as regras de negócio e cálculos financeiros no backend Python.
 

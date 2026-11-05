@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import AnalysisPage from "./pages/AnalysisPage";
 import AmortizacaoPage from "./pages/AmortizacaoPage";
 import AppLayout from "./layouts/AppLayout";
+import CarteiraPage from "./pages/CarteiraPage";
 import DashboardPage from "./pages/DashboardPage";
 import HistoricoPage from "./pages/HistoricoPage";
 import ImportPage from "./pages/ImportPage";
@@ -14,6 +15,7 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
+        <Route path="carteira" element={<CarteiraPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="performance" element={<PerformancePage />} />
         <Route path="import" element={<ImportPage />} />

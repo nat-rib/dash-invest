@@ -41,8 +41,7 @@ Run local com a interface React servida pelo FastAPI:
 python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
 ```
 
-O Streamlit (`python -m streamlit run app.py`) continua disponível com as
-demais páginas até confirmar a paridade funcional.
+O Streamlit (`python -m streamlit run app.py`) permanece disponível como referência, mas a interface React já cobre todas as funcionalidades das telas migradas: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
 
 ## Interface e fontes de dados\n\nA Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.\n\nA navegação é centralizada em `app.py`; estilos responsivos compartilhados ficam em `src/ui/theme.py`. A adaptação completa de tabelas e a validação em larguras/dispositivos reais seguem no roadmap da Fase 1.\n\n## Dados e cálculos
 
