@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from src.importer import load_snapshot
 from src.portfolio import positions_frame
+from src.history import portfolio_history, position_history
 
 PORTFOLIO_PATH = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
 FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", "frontend/dist"))
@@ -59,3 +60,14 @@ if FRONTEND_DIST.exists():
         if full_path and candidate.is_file() and FRONTEND_DIST in candidate.resolve().parents:
             return FileResponse(candidate)
         return FileResponse(FRONTEND_DIST / "index.html")
+
+
+@app.get("/api/history")
+def history() -> dict[str, Any]:
+    """Read-only historical snapshots; not a return calculation."""
+    wealth = portfolio_history()
+    positions = position_history()
+    def records(frame):
+        return [{key: clean(value) for key, value in row.items()} for row in frame.to_dict(orient="records")]
+    return {"wealth": records(wealth), "positions": records(positions),
+            "note": "Variação patrimonial não equivale a rentabilidade: fluxos externos afetam os saldos."}
