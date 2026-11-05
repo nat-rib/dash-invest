@@ -19,3 +19,6 @@ imports/
 *.backup
 .env
 .streamlit/secrets.toml
+
+frontend/node_modules/
+frontend/dist/
