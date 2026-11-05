@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import AnalysisPage from "./pages/AnalysisPage";
+import AmortizacaoPage from "./pages/AmortizacaoPage";
 import AppLayout from "./layouts/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import HistoricoPage from "./pages/HistoricoPage";
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="analysis" element={<AnalysisPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />
+        <Route path="amortizacao" element={<AmortizacaoPage />} />
         <Route
           path="*"
           element={<p className="muted">Página não encontrada.</p>}

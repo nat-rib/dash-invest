@@ -544,6 +544,31 @@ tbody tr:hover {
   font-size: 13.5px;
 }
 
+.legend-row {
+  display: flex;
+  gap: 16px;
+  font-size: 12.5px;
+  color: #3a4256;
+  margin-bottom: 10px;
+}
+
+.legend-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.chart-legend svg + .legend-row {
+  margin-top: 4px;
+}
+
 .metric-grid .card h2 {
   font-size: 13px;
   text-transform: uppercase;

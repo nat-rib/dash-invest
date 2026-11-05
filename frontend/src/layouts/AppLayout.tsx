@@ -7,6 +7,7 @@ const NAV = [
   { to: "/analysis", label: "Análise", icon: "📊" },
   { to: "/historico", label: "Histórico patrimonial", icon: "🕒" },
   { to: "/mercado", label: "Cotações", icon: "💹" },
+  { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
   { to: "/import", label: "Importar carteira", icon: "📥" },
 ];
 
