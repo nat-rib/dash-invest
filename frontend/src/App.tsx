@@ -40,7 +40,7 @@ function App(){
  const [history,setHistory]=useState<HistoryData|null>(null),[historyLoading,setHistoryLoading]=useState(false),[historyError,setHistoryError]=useState("");
  const [data,setData]=useState<Data|null>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true),[page,setPage]=useState("Visão geral"),[search,setSearch]=useState("");
  useEffect(()=>{fetch("/api/overview").then(r=>{if(!r.ok)throw Error("Falha ao carregar carteira");return r.json()}).then(setData).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[]);
- useEffect(()=>{if(page!=="Histórico"||history||historyLoading)return;setHistoryLoading(true);fetch("/api/history").then(r=>{if(!r.ok)throw Error("Falha ao carregar histórico");return r.json()}).then(setHistory).catch(e=>setHistoryError(e.message)).finally(()=>setHistoryLoading(false))},[page,history,historyLoading]);
+ useEffect(()=>{if(page!=="Histórico"||history||historyLoading||historyError)return;setHistoryLoading(true);fetch("/api/history").then(r=>{if(!r.ok)throw Error("Falha ao carregar histórico");return r.json()}).then(setHistory).catch(e=>setHistoryError(e.message)).finally(()=>setHistoryLoading(false))},[page,history,historyLoading,historyError]);
  const rows=useMemo(()=>data?.positions?.filter(p=>[p.Nome,p.Ticker||"",p.Instituição,p.Classe].join(" ").toLowerCase().includes(search.toLowerCase()))||[],[data,search]);
  const nav=["Visão geral","Carteira","Análise","Detalhes","Ledger","Rentabilidade","Mercado","Histórico","Importação","Amortização"];
  const total=data?.metrics?.total_brl||0;
