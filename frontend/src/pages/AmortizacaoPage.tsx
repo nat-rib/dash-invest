@@ -217,7 +217,7 @@ function BalanceChart({ series }: { series: BalancePoint[] }) {
   const byScenario = groupBy(series, (point) => point.scenario);
   const maxMonth = Math.max(...series.map((point) => point.month));
   const maxBalance = Math.max(...series.map((point) => point.saldo_final));
-  const palette = ["#2454d3", "#c9722a"];
+  const palette = ["var(--chart-1)", "var(--chart-2)"];
   return (
     <div className="chart-legend">
       <svg viewBox={`0 0 ${width} ${height}`} className="line-chart" role="img" aria-label="Saldo devedor projetado">

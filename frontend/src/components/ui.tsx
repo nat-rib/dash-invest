@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { Children, cloneElement, isValidElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 export function Card({ title, subtitle, children }: {
   title?: string;
@@ -135,14 +136,37 @@ export function Table({ head, children, empty }: {
   empty?: boolean;
 }) {
   if (empty) return null;
+  const stacked = head.length > 2;
   return (
-    <div className="table-wrap">
-      <table>
+    <div
+      className={`table-wrap ${stacked ? "table-wrap-responsive" : ""}`.trim()}
+      tabIndex={0}
+      role="region"
+      aria-label="Tabela de dados"
+    >
+      <table className={stacked ? "responsive-table" : undefined}>
         <thead>
           <tr>{head.map((label) => <th key={label}>{label}</th>)}</tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody>{stacked ? labelCells(children, head) : children}</tbody>
       </table>
     </div>
   );
+}
+
+// No mobile a tabela vira uma lista de cartões; cada célula recebe o cabeçalho
+// como rótulo para continuar legível sem rolagem horizontal.
+function labelCells(children: ReactNode, head: string[]): ReactNode {
+  return Children.map(children, (row) => {
+    if (!isValidElement(row)) return row;
+    const rowProps = row.props as { children?: ReactNode };
+    const cells = Children.map(rowProps.children, (cell, index) => {
+      if (!isValidElement(cell)) return cell;
+      return cloneElement(
+        cell as ReactElement<{ "data-label"?: string }>,
+        { "data-label": head[index] ?? "" },
+      );
+    });
+    return cloneElement(row as ReactElement<{ children?: ReactNode }>, {}, cells);
+  });
 }

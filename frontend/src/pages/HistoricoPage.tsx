@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, EmptyState, ErrorBox, Loading, SelectInput } from "../components/ui";
+import { Card, EmptyState, ErrorBox, Loading, SelectInput, Table } from "../components/ui";
 import { getJson } from "../services/api";
 
 interface HistoryPoint {
@@ -91,7 +91,7 @@ export default function HistoricoPage() {
               Isto é variação de valor, não rentabilidade da carteira: aportes, retiradas, impostos e
               proventos alteram o patrimônio. Para TWR ou XIRR, registre os fluxos de caixa.
             </div>
-            <TableMini head={["Data", "Patrimônio BRL", "Origem"]} empty={false}>
+            <Table head={["Data", "Patrimônio BRL", "Origem"]} empty={false}>
               {history.points.map((point) => (
                 <tr key={point.captured_at}>
                   <td>{point.captured_at.slice(0, 16).replace("T", " ")}</td>
@@ -99,7 +99,7 @@ export default function HistoricoPage() {
                   <td>{point.source}</td>
                 </tr>
               ))}
-            </TableMini>
+            </Table>
           </Card>
           {keys.length > 0 && (
             <Card title="Evolução individual de posições">
@@ -146,8 +146,8 @@ function LineChart({ points }: { points: { label: string; value: number }[] }) {
   const width = 100;
   const height = 40;
   const coordinates = points.map((point, index) => {
-    const x = points.length === 1 ? 0 : (index / (points.length - 1)) * width;
-    const y = height - ((point.value - min) / span) * height;
+    const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
+    const y = points.length === 1 ? height / 2 : height - ((point.value - min) / span) * height;
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   });
   return (
@@ -155,29 +155,15 @@ function LineChart({ points }: { points: { label: string; value: number }[] }) {
       <polyline
         points={coordinates.join(" ")}
         fill="none"
-        stroke="#2454d3"
+        stroke="var(--chart-1)"
         strokeWidth="1.2"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
       {coordinates.map((coordinate, index) => {
         const [x, y] = coordinate.split(",").map(parseFloat);
-        return <circle key={index} cx={x} cy={y} r="0.8" fill="#2454d3" />;
+        return <circle key={index} cx={x} cy={y} r={points.length === 1 ? 1.6 : 0.8} fill="var(--chart-1)" />;
       })}
     </svg>
-  );
-}
-
-function TableMini({ head, children, empty }: { head: string[]; children: React.ReactNode; empty: boolean }) {
-  if (empty) return null;
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>{head.map((label) => <th key={label}>{label}</th>)}</tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
   );
 }
