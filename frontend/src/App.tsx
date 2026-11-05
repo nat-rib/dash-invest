@@ -2,8 +2,10 @@ import { Route, Routes } from "react-router-dom";
 import AnalysisPage from "./pages/AnalysisPage";
 import AppLayout from "./layouts/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
+import HistoricoPage from "./pages/HistoricoPage";
 import ImportPage from "./pages/ImportPage";
 import LedgerPage from "./pages/LedgerPage";
+import MercadoPage from "./pages/MercadoPage";
 import PerformancePage from "./pages/PerformancePage";
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
         <Route path="performance" element={<PerformancePage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="analysis" element={<AnalysisPage />} />
+        <Route path="historico" element={<HistoricoPage />} />
+        <Route path="mercado" element={<MercadoPage />} />
         <Route
           path="*"
           element={<p className="muted">Página não encontrada.</p>}

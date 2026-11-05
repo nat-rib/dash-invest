@@ -524,6 +524,26 @@ tbody tr:hover {
   font-weight: 700;
 }
 
+.line-chart {
+  width: 100%;
+  height: auto;
+  border: 1px solid #e6e9f1;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fcfdff;
+  margin-bottom: 12px;
+}
+
+.warning-box {
+  background: #fdf0dc;
+  color: #8a5a0d;
+  border: 1px solid #f2dbb6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 13.5px;
+}
+
 .metric-grid .card h2 {
   font-size: 13px;
   text-transform: uppercase;

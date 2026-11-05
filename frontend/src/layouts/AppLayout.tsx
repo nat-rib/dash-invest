@@ -4,8 +4,10 @@ const NAV = [
   { to: "/", label: "Visão geral", icon: "🏠" },
   { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
   { to: "/performance", label: "Rentabilidade", icon: "📈" },
-  { to: "/import", label: "Importar carteira", icon: "📥" },
   { to: "/analysis", label: "Análise", icon: "📊" },
+  { to: "/historico", label: "Histórico patrimonial", icon: "🕒" },
+  { to: "/mercado", label: "Cotações", icon: "💹" },
+  { to: "/import", label: "Importar carteira", icon: "📥" },
 ];
 
 export default function AppLayout() {
