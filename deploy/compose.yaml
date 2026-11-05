@@ -5,18 +5,18 @@ services:
     restart: unless-stopped
     init: true
     ports:
+      # Acesso somente local na VPS; use Tailscale Serve como entrada privada.
       - "127.0.0.1:8501:8501"
     environment:
       TZ: America/Sao_Paulo
       PORTFOLIO_PATH: /app/data/portfolio.json
-      HISTORY_DB_PATH: /app/data/portfolio_history.db
       DASH_INVEST_DB_PATH: /app/data/dash_invest.db
+      HISTORY_DB_PATH: /app/data/portfolio_history.db
       FRONTEND_DIST: /app/frontend/dist
       HOME: /tmp
       XDG_CACHE_HOME: /tmp/.cache
     volumes:
       - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}:/app/data
-      - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}/.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777

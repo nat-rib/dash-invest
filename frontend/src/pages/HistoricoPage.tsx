@@ -1,0 +1,183 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card, EmptyState, ErrorBox, Loading, SelectInput } from "../components/ui";
+import { getJson } from "../services/api";
+
+interface HistoryPoint {
+  captured_at: string;
+  total_brl: number;
+  source: string;
+}
+
+interface PortfolioHistory {
+  points: HistoryPoint[];
+  notice: string;
+}
+
+interface PositionPoint {
+  captured_at: string;
+  position_key: string;
+  name: string;
+  institution: string;
+  currency: string;
+  current_price: number | null;
+  current_value: number | null;
+  value_brl: number | null;
+}
+
+export default function HistoricoPage() {
+  const [history, setHistory] = useState<PortfolioHistory | null>(null);
+  const [keys, setKeys] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string>("");
+  const [series, setSeries] = useState<PositionPoint[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getJson<PortfolioHistory>("/api/history/portfolio")
+      .then(setHistory)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+    getJson<{ keys: string[] }>("/api/history/positions")
+      .then((data) => setKeys(data.keys))
+      .catch(() => undefined);
+  }, []);
+
+  const loadSeries = useCallback(() => {
+    if (!selected) {
+      setSeries(null);
+      return;
+    }
+    setSeries(null);
+    getJson<{ points: PositionPoint[] }>(`/api/history/positions/${encodeURIComponent(selected)}`)
+      .then((data) => setSeries(data.points))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+  }, [selected]);
+  useEffect(loadSeries, [loadSeries]);
+
+  const change = useMemo(() => {
+    if (!history || history.points.length < 2) return null;
+    const first = history.points[0].total_brl;
+    const last = history.points[history.points.length - 1].total_brl;
+    if (first <= 0) return null;
+    return last / first - 1;
+  }, [history]);
+
+  return (
+    <div className="page">
+      <header className="page-header">
+        <h1>Histórico patrimonial</h1>
+        <p className="muted">
+          Snapshots armazenados no banco de histórico persistente do servidor (HISTORY_DB_PATH).
+        </p>
+      </header>
+      <ErrorBoxRender error={error} />
+      {!history && !error && <Card><Loading /></Card>}
+      {history && history.points.length === 0 && (
+        <Card>
+          <EmptyState
+            title="Ainda não há snapshots."
+            hint="Consulte preços em Mercado ou registre o snapshot atual para iniciar o histórico."
+          />
+        </Card>
+      )}
+      {history && history.points.length > 0 && (
+        <>
+          <Card title="Patrimônio consolidado em BRL">
+            <LineChart points={history.points.map((point) => ({ label: point.captured_at, value: point.total_brl }))} />
+            {change !== null && (
+              <p>
+                Variação entre primeiro e último snapshot: <strong>{(change * 100).toFixed(2)}%</strong>
+              </p>
+            )}
+            <div className="warning-box">
+              Isto é variação de valor, não rentabilidade da carteira: aportes, retiradas, impostos e
+              proventos alteram o patrimônio. Para TWR ou XIRR, registre os fluxos de caixa.
+            </div>
+            <TableMini head={["Data", "Patrimônio BRL", "Origem"]} empty={false}>
+              {history.points.map((point) => (
+                <tr key={point.captured_at}>
+                  <td>{point.captured_at.slice(0, 16).replace("T", " ")}</td>
+                  <td>{point.total_brl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td>{point.source}</td>
+                </tr>
+              ))}
+            </TableMini>
+          </Card>
+          {keys.length > 0 && (
+            <Card title="Evolução individual de posições">
+              <div className="field-row">
+                <div className="field">
+                  <span className="field-label">Posição</span>
+                  <SelectInput
+                    value={selected}
+                    onChange={setSelected}
+                    options={[{ value: "", label: "Selecione…" }, ...keys.map((key) => ({ value: key, label: key.replace(/\|/g, " · ") }))]}
+                  />
+                </div>
+              </div>
+              {series && series.length > 0 && (
+                <LineChart
+                  points={series.map((point) => ({
+                    label: point.captured_at,
+                    value: point.value_brl ?? point.current_value ?? 0,
+                  }))}
+                />
+              )}
+              {series !== null && series.length === 0 && (
+                <p className="muted">Sem pontos para esta posição.</p>
+              )}
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ErrorBoxRender({ error }: { error: string | null }) {
+  if (!error) return null;
+  return <ErrorBox message={error} />;
+}
+
+function LineChart({ points }: { points: { label: string; value: number }[] }) {
+  if (points.length === 0) return null;
+  const values = points.map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const width = 100;
+  const height = 40;
+  const coordinates = points.map((point, index) => {
+    const x = points.length === 1 ? 0 : (index / (points.length - 1)) * width;
+    const y = height - ((point.value - min) / span) * height;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="line-chart" role="img" aria-label="Série histórica">
+      <polyline
+        points={coordinates.join(" ")}
+        fill="none"
+        stroke="#2454d3"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {coordinates.map((coordinate, index) => {
+        const [x, y] = coordinate.split(",").map(parseFloat);
+        return <circle key={index} cx={x} cy={y} r="0.8" fill="#2454d3" />;
+      })}
+    </svg>
+  );
+}
+
+function TableMini({ head, children, empty }: { head: string[]; children: React.ReactNode; empty: boolean }) {
+  if (empty) return null;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>{head.map((label) => <th key={label}>{label}</th>)}</tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}

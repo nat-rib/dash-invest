@@ -1,61 +1,76 @@
+"""Aplicação FastAPI do Dash-Invest.
+
+Em produção serve o frontend compilado (frontend/dist), preservando a
+implantação em um único container. O Streamlit permanece disponível para
+uso local até a paridade funcional ser confirmada.
+"""
 from __future__ import annotations
-import math, os
+
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from src.importer import load_snapshot
-from src.portfolio import positions_frame
 
-PORTFOLIO_PATH = Path(os.getenv("PORTFOLIO_PATH", "portfolio.json"))
-FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", "frontend/dist"))
-app = FastAPI(title="Dash Invest API", version="1.0.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+from api import config
+from api.routes import analysis, import_snapshot, ledger, market, mortgage, performance
 
-def clean(value: Any) -> Any:
-    if value is None: return None
-    if hasattr(value, "item"): value = value.item()
-    if isinstance(value, float) and not math.isfinite(value): return None
-    if hasattr(value, "isoformat"): return value.isoformat()
-    return value
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s :: %(message)s",
+)
 
-@app.get("/api/health")
-def health(): return {"status": "ok"}
 
-@app.get("/api/overview")
-def overview() -> dict[str, Any]:
-    if not PORTFOLIO_PATH.exists():
-        return {"has_snapshot": False, "message": "Nenhum snapshot de carteira foi encontrado."}
-    snapshot = load_snapshot(PORTFOLIO_PATH)
-    frame = positions_frame(snapshot)
-    positions = [{key: clean(value) for key, value in row.items()} for row in frame.to_dict(orient="records")]
-    known = [row for row in positions if row["Valor consolidado BRL"] is not None]
-    total = sum(float(row["Valor consolidado BRL"]) for row in known)
-    classes, institutions = {}, {}
-    for row in known:
-        cls, inst, value = str(row["Classe"]), str(row["Instituição"]), float(row["Valor consolidado BRL"])
-        classes[cls] = classes.get(cls, 0.0) + value
-        institutions[inst] = institutions.get(inst, 0.0) + value
-    top = sorted(known, key=lambda row: float(row["Valor consolidado BRL"]), reverse=True)[:5]
-    for row in top: row["weight"] = float(row["Valor consolidado BRL"]) / total if total else None
-    return {
-        "has_snapshot": True, "snapshot_date": snapshot.snapshot_date.isoformat(), "currency": snapshot.currency,
-        "metrics": {"total_brl": total if known else None, "assets": len(positions),
-          "institutions": len({row["Instituição"] for row in positions}), "known_value": len(known),
-          "known_cost": sum(row["Custo total"] is not None for row in positions),
-          "converted": sum(row["Valor convertido BRL"] is not None for row in positions)},
-        "allocation": [{"name": k, "value": v, "weight": v / total if total else 0} for k,v in sorted(classes.items(), key=lambda x:x[1], reverse=True)],
-        "institutions_data": [{"name": k, "value": v, "weight": v / total if total else 0} for k,v in sorted(institutions.items(), key=lambda x:x[1], reverse=True)],
-        "top_positions": top, "positions": positions, "data_source": "portfolio_snapshot_json",
-        "performance": {"twr": None, "xirr": None, "benchmark": None,
-          "note": "Rentabilidade não é inferida de um snapshot isolado."}
-    }
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # Conexões SQLite são curtas e abertas por operação; nada a fechar.
 
-if FRONTEND_DIST.exists():
-    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
-    @app.get("/{full_path:path}", include_in_schema=False)
-    def frontend(full_path: str):
-        candidate = FRONTEND_DIST / full_path
-        if full_path and candidate.is_file() and FRONTEND_DIST in candidate.resolve().parents:
-            return FileResponse(candidate)
-        return FileResponse(FRONTEND_DIST / "index.html")
+
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title="Dash Invest API",
+        version="0.1.0",
+        description=(
+            "Contratos HTTP do Dash-Invest. Regras financeiras permanecem nos "
+            "módulos Python de domínio; esta API só valida e orquestra."
+        ),
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
+    app.include_router(ledger.router)
+    app.include_router(performance.router)
+    app.include_router(import_snapshot.router)
+    app.include_router(analysis.router)
+    app.include_router(market.router)
+    app.include_router(mortgage.router)
+
+    @app.get("/api/health", tags=["health"])
+    def health() -> JSONResponse:
+        try:
+            from api.dependencies import get_database
+
+            with get_database().connection() as connection:
+                connection.execute("SELECT 1")
+            return JSONResponse({"status": "ok"})
+        except Exception as error:  # pragma: no cover - falha de infraestrutura
+            logging.exception("Healthcheck falhou")
+            return JSONResponse({"status": "unhealthy", "detail": str(error)}, status_code=503)
+
+    dist = config.frontend_dist()
+    if dist.exists():
+        app.mount("/", StaticFiles(directory=str(dist), html=True), name="frontend")
+
+    return app
+
+
+app = create_app()
