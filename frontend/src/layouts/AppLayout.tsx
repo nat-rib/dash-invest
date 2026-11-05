@@ -5,6 +5,7 @@ const NAV = [
   { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
   { to: "/performance", label: "Rentabilidade", icon: "📈" },
   { to: "/import", label: "Importar carteira", icon: "📥" },
+  { to: "/analysis", label: "Análise", icon: "📊" },
 ];
 
 export default function AppLayout() {
