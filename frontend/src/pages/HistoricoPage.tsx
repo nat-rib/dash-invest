@@ -61,6 +61,16 @@ export default function HistoricoPage() {
     return last / first - 1;
   }, [history]);
 
+  const seriesPoints = useMemo(() => {
+    const result: { label: string; value: number }[] = [];
+    for (const point of series ?? []) {
+      const value = point.value_brl ?? point.current_value;
+      if (value !== null) result.push({ label: point.captured_at, value });
+    }
+    return result;
+  }, [series]);
+  const seriesMissing = (series?.length ?? 0) - seriesPoints.length;
+
   return (
     <div className="page">
       <header className="page-header">
@@ -91,6 +101,7 @@ export default function HistoricoPage() {
               formatValue={(value) => value.toLocaleString("pt-BR", {
                 style: "currency", currency: "BRL",
               })}
+              formatTick={brlTick}
             />
             {change !== null && (
               <p>
@@ -104,7 +115,7 @@ export default function HistoricoPage() {
             <Table head={["Data", "Patrimônio BRL", "Origem"]} empty={false}>
               {history.points.map((point) => (
                 <tr key={point.captured_at}>
-                  <td>{point.captured_at.slice(0, 16).replace("T", " ")}</td>
+                  <td>{formatDateTime(point.captured_at)}</td>
                   <td>{point.total_brl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
                   <td>{point.source}</td>
                 </tr>
@@ -123,20 +134,25 @@ export default function HistoricoPage() {
                   />
                 </div>
               </div>
-              {series && series.length > 0 && (
-                <ResponsiveChart
-                  ariaLabel={`Evolução do valor em BRL da posição ${selected}`}
-                  points={series.map((point) => ({
-                    label: point.captured_at,
-                    value: point.value_brl ?? point.current_value ?? 0,
-                  }))}
-                  formatValue={(value) => value.toLocaleString("pt-BR", {
-                    style: "currency", currency: "BRL",
-                  })}
-                />
+              {series !== null && seriesPoints.length > 0 && (
+                <>
+                  <ResponsiveChart
+                    ariaLabel={`Evolução do valor em BRL da posição ${selected}`}
+                    points={seriesPoints}
+                    formatValue={(value) => value.toLocaleString("pt-BR", {
+                      style: "currency", currency: "BRL",
+                    })}
+                    formatTick={brlTick}
+                  />
+                  {seriesMissing > 0 && (
+                    <p className="muted">
+                      {seriesMissing} {seriesMissing === 1 ? "ponto sem valor em BRL foi omitido" : "pontos sem valor em BRL foram omitidos"}.
+                    </p>
+                  )}
+                </>
               )}
-              {series !== null && series.length === 0 && (
-                <p className="muted">Sem pontos para esta posição.</p>
+              {series !== null && seriesPoints.length === 0 && (
+                <p className="muted">Sem pontos com valor em BRL para esta posição.</p>
               )}
             </Card>
           )}
@@ -149,4 +165,21 @@ export default function HistoricoPage() {
 function ErrorBoxRender({ error }: { error: string | null }) {
   if (!error) return null;
   return <ErrorBox message={error} />;
+}
+
+function brlTick(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return `${(value / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+  }
+  if (abs >= 1_000) {
+    return `${(value / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mil`;
+  }
+  return value.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+}
+
+function formatDateTime(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
