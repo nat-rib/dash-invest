@@ -1,7 +1,8 @@
 # Roadmap: migração das telas para React + FastAPI
 
-**Status:** em implementação — todas as fases (0 a 6) migradas para React + FastAPI em `develop`; pendências operacionais: validação user-facing, remoção do Streamlit e validação pós-deploy.  
-**Branch de referência:** `develop`  
+**Status:** migração funcional concluída — fases 0 a 6 implementadas em React + FastAPI e publicadas em produção. Pendências: validação user-facing, testes automatizados do frontend e remoção do Streamlit.  
+**Branch de referência:** `develop` (integração) → `main` (produção)  
+**Última atualização:** 08/11/2026  
 **Objetivo:** migrar todas as funcionalidades da interface Streamlit para React + TypeScript, mantendo as regras de negócio e cálculos financeiros no backend Python.
 
 ## 1. Princípios de arquitetura
@@ -46,14 +47,17 @@ A estrutura é uma proposta de organização. Antes de criar módulos, verificar
 
 ## 3. Fases de implementação
 
-> **Progresso:** Fase 0 entregou `api/` (FastAPI, schemas Pydantic, camada de
-> serviços, healthcheck, OpenAPI) e o esqueleto React em `frontend/` com
-> navegação real. A Fase 1 entregou os endpoints de Ledger
-> (`transactions` com paginação/filtros, `instruments`, `snapshot/preview|import`,
-> `csv/preview|import`, `transfers/suggestions|confirm`, `state`), a tela
-> React `frontend/src/pages/LedgerPage.tsx` e testes de integração em
-> `tests/test_api_ledger.py`. A migração do snapshot permanece idempotente,
-> a prévia de CSV não persiste e nenhuma conciliação acontece sem confirmação.
+> **Progresso (08/11/2026):** todas as fases 0 a 6 estão implementadas e em produção.
+>
+> - **Fase 0:** `api/` com FastAPI, schemas Pydantic, camada de serviços, healthcheck e OpenAPI; esqueleto React em `frontend/`.
+> - **Fase 1:** ledger completo (`transactions`, `instruments`, `snapshot/preview|import`, `csv/preview|import`, `transfers/suggestions|confirm`, `state`) e tela `LedgerPage.tsx`.
+> - **Fase 2:** fluxos, XIRR, TWR e avaliações (`/api/performance/*`) e `PerformancePage.tsx`.
+> - **Fase 3:** prévia e confirmação de substituição do snapshot em `ImportPage.tsx`.
+> - **Fase 4:** alocação, concentração e detalhes do ativo em `AnalysisPage.tsx`.
+> - **Fase 5:** histórico patrimonial e cotações (`HistoricoPage.tsx`, `MercadoPage.tsx`).
+> - **Fase 6:** simulador SAC e comparação com investimento em `AmortizacaoPage.tsx`.
+>
+> A migração do snapshot permanece idempotente, a prévia de CSV não persiste e nenhuma conciliação acontece sem confirmação.
 
 ### Fase 0 — Fundação da API e contratos
 
@@ -227,6 +231,8 @@ A estrutura é uma proposta de organização. Antes de criar módulos, verificar
 
 ## 4. Sequência de PRs sugerida
 
+> Todas as entregas abaixo foram concluídas até 08/11/2026; a tabela permanece como registro do sequenciamento original.
+
 | PR | Escopo | Resultado esperado |
 |---|---|---|
 | 1 | Fundação da API e contratos | Estrutura modular, schemas e testes |
@@ -252,18 +258,23 @@ Cada PR deve ser pequeno o suficiente para revisão, manter a aplicação implan
 
 ## 6. Definição de concluído
 
-- [ ] Todas as telas e funcionalidades existentes foram migradas para React.
-- [ ] Nenhuma regra financeira foi duplicada no frontend.
-- [ ] Cálculos financeiros passaram por testes de regressão.
-- [ ] Importações e operações de escrita são validadas e seguras.
-- [ ] Ledger, snapshots e histórico persistem após recriação do container.
-- [ ] Interface validada em desktop e dispositivos móveis.
-- [ ] Documentação e OpenAPI atualizados.
-- [ ] Todas as funcionalidades necessárias operam sem depender do Streamlit.
-- [ ] Streamlit só é removido após confirmar paridade funcional e operacional.
+- [x] Todas as telas e funcionalidades existentes foram migradas para React (9 páginas em `frontend/src/pages/`).
+- [x] Nenhuma regra financeira foi duplicada no frontend: XIRR, TWR, alocação e reconstrução vêm da API; a UI apenas formata.
+- [x] Cálculos financeiros passaram por testes de regressão (`tests/test_performance.py`, `tests/test_mortgage.py`, `tests/test_ledger_reconstruction.py`).
+- [x] Importações e operações de escrita são validadas e seguras (prévia + confirmação, persistência atômica e idempotente).
+- [x] Ledger, snapshots e histórico persistem após recriação do container (volume em `/app/data`, validado no deploy de 08/11/2026).
+- [x] Interface validada em desktop e dispositivos móveis de forma **automatizada** (overflow em 360 px, 390 px, 430 px e desktop).
+- [ ] Validação user-facing em dispositivos reais.
+- [x] Documentação e OpenAPI atualizados.
+- [x] Todas as funcionalidades necessárias operam sem depender do Streamlit.
+- [ ] Testes automatizados de frontend (Vitest + Playwright).
+- [ ] Streamlit removido após confirmar paridade funcional e operacional.
 
-## 7. Primeiro marco
+> A paridade funcional foi confirmada; a remoção do Streamlit é a última etapa da trilha.
 
-**Próxima entrega:** PR 1 + PR 2 — fundação da API e Ledger funcional.
+## 7. Próximos passos
 
-O marco deve incluir contratos estáveis, endpoints de consulta e escrita, importação CSV com prévia/confirmação, migração segura do snapshot, conciliação manual e testes de regressão dos fluxos de persistência.
+1. Validação user-facing das telas migradas em desktop e celular.
+2. Adicionar testes automatizados de frontend (Vitest para unidades, Playwright para fluxos).
+3. Remover `app.py`, `pages/` e `src/ui/` depois da validação — o container já serve apenas o React via FastAPI.
+4. Retomar a evolução do produto pela Fase 3 (data platform) de [`architecture/implementation-roadmap.md`](architecture/implementation-roadmap.md).
