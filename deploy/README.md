@@ -26,6 +26,8 @@ No GitHub, em **Settings → Secrets and variables → Actions → Secrets**, ca
 
 Gere um par de chaves SSH Ed25519 dedicado ao deploy. Adicione a chave pública ao arquivo `/home/deploy/.ssh/authorized_keys` da VPS e cadastre o conteúdo completo da chave privada no secret `VPS_SSH_PRIVATE_KEY`. Não versione a chave privada.
 
+Ao rotacionar a chave, atualize os dois lados na mesma janela: adicione a pública nova em `authorized_keys`, remova a antiga e atualize o secret `VPS_SSH_PRIVATE_KEY` com a privada nova. O workflow valida a chave no step **Configure SSH** e imprime apenas o fingerprint; se o secret ficar defasado, o preflight falha com mensagem explícita em vez de erro genérico.
+
 O workflow usa a action oficial `tailscale/github-action@v4`, autentica um runner efêmero com OAuth e conecta por SSH ao IP Tailscale da VPS (`100.104.34.5`). A VPS não precisa expor SSH publicamente.
 
 ## 2. Pré-requisitos na VPS
