@@ -15,7 +15,7 @@ Evoluir o dashboard pessoal para uma plataforma privada de inteligência de inve
 5. Ausência não é zero: dados ausentes, desatualizados ou não aplicáveis permanecem explícitos.
 6. Rastreabilidade: dados externos guardam provedor, instante de coleta, data de referência/publicação e qualidade.
 7. Privacidade por padrão: carteira, transações, credenciais e documentos privados ficam fora do Git e da imagem Docker; acesso permanece na tailnet.
-8. Evolução incremental: preservar Streamlit e o funcionamento atual enquanto novos domínios são introduzidos por contratos testáveis.
+8. Evolução incremental: manter a aplicação implantável e os contratos testáveis a cada entrega.
 
 ## Visão de produto
 
@@ -29,7 +29,7 @@ Evoluir o dashboard pessoal para uma plataforma privada de inteligência de inve
 ## Arquitetura lógica
 
     flowchart TB
-      UI[Streamlit UI / páginas responsivas]
+      UI[React + TypeScript]
       APP[Application services]
       DOMAIN[Domain: instrumentos, ledger, carteira]
       ANALYTICS[Analytics: retorno, risco, valuation]
@@ -57,9 +57,9 @@ Evoluir o dashboard pessoal para uma plataforma privada de inteligência de inve
 
 | Camada | Responsabilidade | Regra |
 |---|---|---|
-| UI | Streamlit, navegação, componentes e visualizações | Não contém regra financeira |
+| UI | React + TypeScript, navegação, componentes e visualizações | Não contém regra financeira |
 | Application | Casos de uso e coordenação | Orquestra domínio, repositórios e provedores |
-| Domain | Instrumentos, carteiras, transações e invariantes | Independente de Streamlit, SQLite e APIs |
+| Domain | Instrumentos, carteiras, transações e invariantes | Independente da UI, SQLite e APIs |
 | Analytics | Fórmulas de retorno, risco, fundamentos e valuation | Determinístico, com unidades/frequências explícitas |
 | Providers | Adaptadores de mercado, macro, fundamentos e documentos | Contratos independentes do fornecedor |
 | Ingestion | Coleta, normalização, validação e histórico | Idempotente e auditável |
@@ -71,7 +71,7 @@ Evoluir o dashboard pessoal para uma plataforma privada de inteligência de inve
 | Área | Escolha inicial |
 |---|---|
 | Linguagem | Python 3.11+ (runtime atual); alvo Python 3.12+ |
-| UI | Streamlit |
+| UI | React + TypeScript (Vite) |
 | Contratos | Pydantic 2 |
 | Operacional | SQLite com WAL e migrations versionadas |
 | Analytics | DuckDB + Pandas/NumPy |
@@ -160,7 +160,7 @@ Saída estruturada: claim, evidence, source_urls, publication_dates, confidence 
       ai/              # gateway, research agent, schemas e retrieval
       ingestion/       # pipelines, normalization e quality
       persistence/     # sqlite, duckdb e repositories
-      ui/              # components, layouts e formatting
+    frontend/          # React + TypeScript (Vite)
     jobs/
     docs/architecture/
     tests/

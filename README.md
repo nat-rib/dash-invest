@@ -4,18 +4,21 @@ Dashboard privado em Python + React para acompanhar uma carteira, operações e 
 
 ## Instalação e uso
 
-Requer Python 3.11 ou superior.
+Requer Python 3.11 ou superior e Node.js 22 para compilar o frontend.
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m streamlit run app.py
+
+cd frontend && npm install && npm run build && cd ..
+
+cp .env.example .env          # preencha as variáveis necessárias
+set -a; source .env; set +a
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
 ```
 
-Ou, após a instalação inicial, execute `./run_dashboard.sh`.
-
-O servidor foi configurado para ouvir somente em `127.0.0.1` e as estatísticas de uso do Streamlit ficam desativadas. Abra a URL exibida no terminal. A navegação é organizada em **Visão geral**, **Minha carteira**, **Investigar**, **Mercado** e **Configurações**. Use **Importar carteira** para validar e substituir o snapshot JSON por inteiro. Alternativamente, copie um JSON válido para `portfolio.json` na raiz do projeto.
+Abra a URL exibida no terminal. Use **Importar carteira** para validar e substituir o snapshot JSON por inteiro. Alternativamente, copie um JSON válido para `portfolio.json` na raiz do projeto.
 
 Use `portfolio.example.json` como referência: todo o conteúdo é fictício. Nunca versione seu `portfolio.json` real.
 
@@ -41,9 +44,13 @@ Run local com a interface React servida pelo FastAPI:
 python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
 ```
 
-O Streamlit (`python -m streamlit run app.py`) permanece disponível apenas como referência legada; a interface React cobre todas as funcionalidades: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
+A interface cobre todas as funcionalidades: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
 
-## Interface e fontes de dados\n\nA Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.\n\nA navegação é centralizada em `app.py` no Streamlit legado; a interface React em `frontend/` usa navegação agrupada, dashboard consolidado pelo endpoint `GET /api/overview` e tabelas que viram cartões no celular. A validação automatizada de overflow cobre 360 px, 390 px, 430 px e desktop.\n\n## Dados e cálculos
+## Interface e fontes de dados
+
+A Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.
+
+A interface React em `frontend/` usa navegação agrupada, dashboard consolidado pelo endpoint `GET /api/overview` e tabelas que viram cartões no celular. A validação automatizada de overflow cobre 360 px, 390 px, 430 px e desktop.\n\n## Dados e cálculos
 
 - Classes aceitas: `acao`, `fii`, `renda_fixa`, `etf`, `exterior`, `cripto`, `fundo`, `outros`, `caixa` e `credito_privado_coletivo`.
 - O valor vem de `current_value`, quando informado; caso contrário, de `quantity × current_price`.
@@ -57,7 +64,7 @@ Os dados ficam somente nos arquivos locais usados pela aplicação e não são e
 
 ## Dados de mercado opcionais
 
-A página **Mercado** pode consultar cotações e histórico diário no Alpha Vantage. A chave é lida de `ALPHA_VANTAGE_API_KEY` no ambiente do processo (interface React/FastAPI) ou de `.streamlit/secrets.toml` (Streamlit legado):
+A página **Mercado** pode consultar cotações e histórico diário no Alpha Vantage. A chave é lida de `ALPHA_VANTAGE_API_KEY` no ambiente do processo:
 
 ```bash
 cp .env.example .env          # preencha ALPHA_VANTAGE_API_KEY

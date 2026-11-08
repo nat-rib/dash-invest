@@ -39,13 +39,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - [x] Tela de migração explícita: preserva o JSON original e grava o snapshot no SQLite.
 - [x] Importação canônica CSV idempotente, com validação completa e persistência atômica.
 - [x] Adaptador CSV configurável para layouts distintos de bancos/corretoras, com mapeamento de colunas, tipos em português, timezone, locale decimal e resolução do ativo no catálogo.
-- [x] Tela Streamlit para upload, prévia, mapeamento e importação de extratos.
+- [x] Tela de importação de extratos na interface.
 - [x] Sugestão conservadora e confirmação manual de transferências; vínculos ficam em tabela separada, sem editar eventos do ledger.
 - [x] Eventos de proventos, JCP, juros, cupons, amortizações, taxas, impostos, splits, bonificações e transferências.
 - [x] Reconstrução de posições e custo para compras, vendas, transferências de ativos, splits, bonificações e amortizações.
 - [x] Cálculo TWR por subperíodos com fluxos externos delimitados.
 - [x] Cálculo XIRR com datas reais, base anual de 365 dias e detecção conservadora de fluxos ambíguos.
-- [x] Interface Streamlit para revisar fluxos, calcular XIRR e informar avaliações para TWR.
+- [x] Interface para revisar fluxos, calcular XIRR e informar avaliações para TWR.
 
 **Limites conhecidos:** o adaptador é configurável, não um parser proprietário pré-configurado para cada instituição; o usuário mapeia o layout no upload. IDs externos sintéticos são usados apenas quando o extrato não fornece identificador estável, com fingerprint do conteúdo e ordinal de repetição. TWR depende de avaliações reais nos limites dos fluxos; o app não estima preços ausentes. Operações em moedas diferentes exigem conversão cambial explícita.
 
