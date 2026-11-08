@@ -1,6 +1,6 @@
 # Roadmap: migração das telas para React + FastAPI
 
-**Status:** migração funcional concluída — fases 0 a 6 implementadas em React + FastAPI e publicadas em produção. Pendências: validação user-facing, testes automatizados do frontend e remoção do Streamlit.  
+**Status:** migração concluída — fases 0 a 6 implementadas em React + FastAPI, publicadas em produção e Streamlit removido. Pendências: validação user-facing e testes automatizados do frontend.  
 **Branch de referência:** `develop` (integração) → `main` (produção)  
 **Última atualização:** 08/11/2026  
 **Objetivo:** migrar todas as funcionalidades da interface Streamlit para React + TypeScript, mantendo as regras de negócio e cálculos financeiros no backend Python.
@@ -268,13 +268,12 @@ Cada PR deve ser pequeno o suficiente para revisão, manter a aplicação implan
 - [x] Documentação e OpenAPI atualizados.
 - [x] Todas as funcionalidades necessárias operam sem depender do Streamlit.
 - [ ] Testes automatizados de frontend (Vitest + Playwright).
-- [ ] Streamlit removido após confirmar paridade funcional e operacional.
+- [x] Streamlit removido após confirmar paridade funcional e operacional.
 
-> A paridade funcional foi confirmada; a remoção do Streamlit é a última etapa da trilha.
+> A paridade funcional foi confirmada e o Streamlit foi removido em 08/11/2026; a aplicação opera somente com React + FastAPI.
 
 ## 7. Próximos passos
 
 1. Validação user-facing das telas migradas em desktop e celular.
 2. Adicionar testes automatizados de frontend (Vitest para unidades, Playwright para fluxos).
-3. Remover `app.py`, `pages/` e `src/ui/` depois da validação — o container já serve apenas o React via FastAPI.
-4. Retomar a evolução do produto pela Fase 3 (data platform) de [`architecture/implementation-roadmap.md`](architecture/implementation-roadmap.md).
+3. Retomar a evolução do produto pela Fase 3 (data platform) de [`architecture/implementation-roadmap.md`](architecture/implementation-roadmap.md).

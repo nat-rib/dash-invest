@@ -29,7 +29,8 @@ def client_from_env() -> AlphaVantageClient:
     api_key = os.environ.get("ALPHA_VANTAGE_API_KEY", "")
     if not api_key:
         raise MarketUnavailableError(
-            "Configure ALPHA_VANTAGE_API_KEY (.env do servidor) ou em .streamlit/secrets.toml local."
+            "Configure ALPHA_VANTAGE_API_KEY no ambiente do processo "
+            "(arquivo .env local ou .env da VPS)."
         )
     return AlphaVantageClient(api_key)
 

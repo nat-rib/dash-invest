@@ -10,7 +10,7 @@ A página **Ledger e operações → Migrar carteira JSON** lê o arquivo indica
 - A operação é transacional e pode ser repetida. Importações do mesmo snapshot/data-base atualizam a projeção correspondente.
 - O banco do ledger usa `DASH_INVEST_DB_PATH`; em produção deve apontar para o volume persistente, fora da imagem.
 
-O dashboard legado continua lendo o JSON até uma migração futura da experiência principal. A tela nova não troca a fonte do dashboard silenciosamente.
+O dashboard lê o JSON até que os fluxos migrem para o ledger. A tela de migração não troca a fonte do dashboard silenciosamente.
 
 ## Importação de extratos
 

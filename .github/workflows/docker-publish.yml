@@ -33,7 +33,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Compile application modules
-        run: python -m compileall -q api app.py pages src
+        run: python -m compileall -q api src
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

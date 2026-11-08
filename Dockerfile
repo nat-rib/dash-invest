@@ -24,8 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=app:app api/ ./api/
 COPY --chown=app:app src/ ./src/
-# O Streamlit continua no repositório para uso local até confirmar a paridade
-# funcional; o container passa a servir o React compilado pelo FastAPI.
+# O container serve apenas o frontend React compilado pelo FastAPI.
 COPY --from=frontend-build --chown=app:app /build/dist ./frontend/dist
 
 RUN mkdir -p /app/data \

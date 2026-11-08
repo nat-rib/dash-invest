@@ -1,8 +1,7 @@
 """Aplicação FastAPI do Dash-Invest.
 
-Em produção serve o frontend compilado (frontend/dist), preservando a
-implantação em um único container. O Streamlit permanece disponível para
-uso local até a paridade funcional ser confirmada.
+Serve o frontend compilado (frontend/dist) e a API JSON, preservando a
+implantação em um único container.
 """
 from __future__ import annotations
 

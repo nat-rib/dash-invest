@@ -4,14 +4,14 @@
 # Roda no seu Mac, na raiz do repositório:
 #   bash deploy/provision-alpha-key.sh
 #
-# Lê a chave de .streamlit/secrets.toml (ou pede via read -s) e envia para
+# Lê a chave de .env (ou pede via read -s) e envia para
 # /opt/personal-cloud/apps/dash-invest/.env, com modo 600. A chave nunca é
 # impressa na tela nem fica no histórico do shell.
 set -Eeuo pipefail
 
 VPS_HOST="${VPS_HOST:-deploy@100.104.34.5}"
 APP_DIR="${APP_DIR:-/opt/personal-cloud/apps/dash-invest}"
-LOCAL_SECRETS="${LOCAL_SECRETS:-.streamlit/secrets.toml}"
+LOCAL_ENV="${LOCAL_ENV:-.env}"
 PUSH=0
 [[ "${1:-}" == "--push" ]] && PUSH=1
 
@@ -21,13 +21,14 @@ die() { echo "erro: $*" >&2; exit 1; }
 grep -q 'ALPHA_VANTAGE_API_KEY' deploy/compose.yaml \
   || die "deploy/compose.yaml não injeta ALPHA_VANTAGE_API_KEY; atualize o repositório"
 
-if [[ -f "$LOCAL_SECRETS" ]]; then
-  KEY=$(sed -n 's/^[[:space:]]*ALPHA_VANTAGE_API_KEY[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' "$LOCAL_SECRETS" | head -n1)
+if [[ -f "$LOCAL_ENV" ]]; then
+  KEY=$(sed -n 's/^[[:space:]]*ALPHA_VANTAGE_API_KEY[[:space:]]*=[[:space:]]*//p' "$LOCAL_ENV" | head -n1)
+  KEY="${KEY%\"}"; KEY="${KEY#\"}"
 else
   read -rsp "ALPHA_VANTAGE_API_KEY: " KEY
   echo
 fi
-[[ -n "${KEY:-}" ]] || die "chave vazia ou não encontrada (esperado em $LOCAL_SECRETS)"
+[[ -n "${KEY:-}" ]] || die "chave vazia ou não encontrada (copie .env.example para .env e preencha)"
 
 echo "==> enviando compose.yaml para $VPS_HOST"
 scp -q deploy/compose.yaml "$VPS_HOST:/tmp/dash-invest-compose.yaml"
@@ -55,7 +56,7 @@ if [[ "$PUSH" == 1 ]]; then
   echo "==> commitando e publicando em main"
   git add deploy/compose.yaml deploy/install.sh deploy/README.md \
           deploy/provision-alpha-key.sh .github/workflows/docker-publish.yml \
-          README.md .env.example .streamlit/secrets.example.toml
+          README.md .env.example
   if git diff --cached --quiet; then
     echo "nada novo para commitar"
   else

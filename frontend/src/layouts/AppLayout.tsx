@@ -172,8 +172,8 @@ export default function AppLayout() {
         <div className="sidebar-footer">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <p className="sidebar-note">
-            Migração Streamlit → React em andamento: demais telas continuam no
-            aplicativo Streamlit até a paridade funcional ser confirmada.
+            Interface React + FastAPI. Carteira, ledger e histórico ficam no
+            servidor privado e não são enviados a terceiros.
           </p>
         </div>
       </aside>
