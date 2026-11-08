@@ -11,6 +11,7 @@ imports/
 venv/
 .env
 .streamlit/secrets.toml
+*.local-backup
 __pycache__/
 .pytest_cache/
 *.py[cod]

@@ -57,7 +57,14 @@ Os dados ficam somente nos arquivos locais usados pela aplicação e não são e
 
 ## Dados de mercado opcionais
 
-A página **Mercado** pode consultar cotações e histórico diário no Alpha Vantage. Crie `.streamlit/secrets.toml` a partir de `.streamlit/secrets.example.toml` e inclua sua chave; nunca versione esse arquivo. A consulta envia somente o símbolo do ativo ao Alpha Vantage — não envia saldos, quantidades ou instituições. Por padrão, ações, FIIs e ETFs em BRL usam o sufixo `.SAO`; se necessário, defina `market_symbol` na posição do JSON. A atualização de preços sempre mostra uma prévia e requer confirmação antes de substituir o snapshot.
+A página **Mercado** pode consultar cotações e histórico diário no Alpha Vantage. A chave é lida de `ALPHA_VANTAGE_API_KEY` no ambiente do processo (interface React/FastAPI) ou de `.streamlit/secrets.toml` (Streamlit legado):
+
+```bash
+cp .env.example .env          # preencha ALPHA_VANTAGE_API_KEY
+set -a; source .env; set +a   # carrega no shell antes de subir a API
+```
+
+Em produção o `deploy/compose.yaml` injeta a variável a partir do `.env` da VPS. Nunca versione `.env` ou `secrets.toml`, e nunca passe a chave como `ARG`/`ENV` do `Dockerfile` — ela ficaria na imagem. A consulta envia somente o símbolo do ativo ao Alpha Vantage — não envia saldos, quantidades ou instituições. Por padrão, ações, FIIs e ETFs em BRL usam o sufixo `.SAO`; se necessário, defina `market_symbol` na posição do JSON. A atualização de preços sempre mostra uma prévia e requer confirmação antes de substituir o snapshot.
 
 ## Histórico local
 

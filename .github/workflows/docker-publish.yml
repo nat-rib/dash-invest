@@ -128,6 +128,29 @@ jobs:
             deploy@100.104.34.5 \
             'set -e; docker info >/dev/null; sudo -n true'
 
+      - name: Provision runtime secrets on VPS
+        # Opcional: sem o secret, o .env criado manualmente na VPS é preservado.
+        env:
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: |
+          if [ -z "${ALPHA_VANTAGE_API_KEY:-}" ]; then
+            echo "ALPHA_VANTAGE_API_KEY não configurado; mantendo o .env atual da VPS."
+            exit 0
+          fi
+          printf 'ALPHA_VANTAGE_API_KEY=%s\n' "$ALPHA_VANTAGE_API_KEY" |
+            ssh -i ~/.ssh/id_ed25519 \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              deploy@100.104.34.5 \
+              'set -Eeuo pipefail
+               APP_DIR=/opt/personal-cloud/apps/dash-invest
+               sudo -n install -d -m 755 -o deploy -g deploy "$APP_DIR"
+               umask 077
+               tmp=$(mktemp)
+               cat > "$tmp"
+               sudo -n install -m 600 -o deploy -g deploy "$tmp" "$APP_DIR/.env"
+               rm -f "$tmp"'
+
       - name: Authenticate to GHCR on VPS and deploy
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}

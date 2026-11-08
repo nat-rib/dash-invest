@@ -29,7 +29,14 @@ fi
 APP_GROUP="$(getent group 10001 | cut -d: -f1)"
 sudo -n usermod -aG "$APP_GROUP" deploy
 sudo -n install -d -m 755 -o deploy -g deploy "$APP_DIR"
-sudo -n install -d -m 2770 -o 10001 -g "$APP_GROUP" "$DATA_DIR" "$DATA_DIR/.streamlit"
+sudo -n install -d -m 2770 -o 10001 -g "$APP_GROUP" "$DATA_DIR"
+
+# Segredos de runtime ficam em $APP_DIR/.env, fora do Git e da imagem.
+# O arquivo é criado manualmente (ou pelo workflow) e nunca versionado.
+if [[ -f "$APP_DIR/.env" ]]; then
+  sudo -n chown deploy:deploy "$APP_DIR/.env"
+  sudo -n chmod 600 "$APP_DIR/.env"
+fi
 
 if [[ ! -f "$DATA_DIR/portfolio.json" ]]; then
   sudo -n install -m 660 -o 10001 -g "$APP_GROUP" \
@@ -37,14 +44,9 @@ if [[ ! -f "$DATA_DIR/portfolio.json" ]]; then
   echo "Criado portfolio.json inicial com dados fictícios."
 fi
 
-if [[ ! -f "$DATA_DIR/.streamlit/secrets.toml" ]]; then
-  sudo -n install -m 640 -o 10001 -g "$APP_GROUP" /dev/null "$DATA_DIR/.streamlit/secrets.toml"
-fi
-
 sudo -n chown -R "10001:$APP_GROUP" "$DATA_DIR"
 sudo -n find "$DATA_DIR" -type d -exec chmod 2770 {} +
 sudo -n find "$DATA_DIR" -type f -exec chmod 660 {} +
-sudo -n chmod 640 "$DATA_DIR/.streamlit/secrets.toml"
 
 install -m 640 "$REPO_DIR/deploy/compose.yaml" "$APP_DIR/compose.yaml"
 

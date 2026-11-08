@@ -22,6 +22,7 @@ No GitHub, em **Settings → Secrets and variables → Actions → Secrets**, ca
 - `TS_OAUTH_CLIENT_ID`: ID do OAuth client do Tailscale.
 - `TS_OAUTH_SECRET`: segredo do OAuth client.
 - `VPS_SSH_PRIVATE_KEY`: chave privada SSH dedicada ao GitHub Actions (não reutilize a chave pessoal do Mac).
+- `ALPHA_VANTAGE_API_KEY` (opcional): chave de mercado provisionada no `.env` da VPS durante o deploy; veja a seção 5.
 
 Gere um par de chaves SSH Ed25519 dedicado ao deploy. Adicione a chave pública ao arquivo `/home/deploy/.ssh/authorized_keys` da VPS e cadastre o conteúdo completo da chave privada no secret `VPS_SSH_PRIVATE_KEY`. Não versione a chave privada.
 
@@ -51,15 +52,38 @@ Não configure Funnel, não crie regra pública para a porta 8501 e não altere 
 - Carteira: `/opt/personal-cloud/data/dash-invest/portfolio.json`
 - Histórico legado: `/opt/personal-cloud/data/dash-invest/portfolio_history.db`
 - Ledger SQLite: `/opt/personal-cloud/data/dash-invest/dash_invest.db`
-- Secrets Streamlit: `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml`
+- Segredos de runtime: `/opt/personal-cloud/apps/dash-invest/.env` (fora do Git e da imagem)
 
 O banco SQLite usa `HISTORY_DB_PATH=/app/data/portfolio_history.db`, portanto permanece no volume persistente mesmo com o filesystem do container em modo somente leitura.
 
 O instalador cria uma carteira de exemplo somente se o arquivo ainda não existir. Importe seu JSON real pela página **Importação**. Não copie dados financeiros para o repositório.
 
-Se for usar Alpha Vantage, copie `.streamlit/secrets.example.toml` para `/opt/personal-cloud/data/dash-invest/.streamlit/secrets.toml` e substitua o valor de exemplo pela sua chave. Nunca coloque a chave no Git.
+## 5. Segredos de runtime (Alpha Vantage)
 
-## 5. Atualizações e diagnóstico
+O container de produção roda **FastAPI**, que lê a chave de `ALPHA_VANTAGE_API_KEY` no ambiente do processo — não de `secrets.toml`. O `.env` fica ao lado do `compose.yaml` e é lido pelo Docker Compose; ele **não** é sobrescrito pelos deploys, ao contrário do `compose.yaml`.
+
+Crie o arquivo uma única vez na VPS:
+
+```bash
+cd /opt/personal-cloud/apps/dash-invest
+umask 077
+printf 'ALPHA_VANTAGE_API_KEY=%s\n' 'SUA_CHAVE' > .env
+chown deploy:deploy .env
+chmod 600 .env
+docker compose up -d --force-recreate
+```
+
+Confira sem imprimir a chave:
+
+```bash
+docker exec dash-invest sh -lc 'test -n "$ALPHA_VANTAGE_API_KEY" && echo configurada'
+```
+
+Alternativa gerenciada pelo GitHub: cadastre o secret `ALPHA_VANTAGE_API_KEY` em **Settings → Secrets and variables → Actions**. O job de deploy grava esse valor em `/opt/personal-cloud/apps/dash-invest/.env` (modo `600`) antes de recriar o container. Se o secret não existir, o `.env` manual é preservado. Atenção: quando o secret existe, ele passa a ser a fonte da verdade e sobrescreve esse arquivo a cada deploy.
+
+Nunca passe a chave como `ARG`/`ENV` no `Dockerfile` nem a versione: ela ficaria gravada na imagem publicada no GHCR. Se a chave vazar, gere outra no Alpha Vantage.
+
+## 6. Atualizações e diagnóstico
 
 Antes de atualizar, a esteira pausa o container para criar um backup consistente do diretório de dados em `/opt/personal-cloud/data/dash-invest-backups`, mantendo os sete backups mais recentes. Depois do deploy, aguarda o healthcheck; se a imagem nova não ficar saudável, tenta voltar à imagem anterior. O rollback automático cobre a imagem/container, não substitui o procedimento de restauração manual de dados.
 
