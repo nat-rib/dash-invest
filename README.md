@@ -1,6 +1,6 @@
 # Dashboard pessoal de investimentos
 
-Dashboard privado em Python/Streamlit para acompanhar uma carteira, operações e dados de mercado. A aplicação mantém o snapshot JSON legado e o ledger SQLite como fontes distintas até que exista uma reconciliação explícita entre eles.
+Dashboard privado em Python + React para acompanhar uma carteira, operações e dados de mercado. A aplicação mantém o snapshot JSON legado e o ledger SQLite como fontes distintas até que exista uma reconciliação explícita entre eles.
 
 ## Instalação e uso
 
@@ -19,12 +19,12 @@ O servidor foi configurado para ouvir somente em `127.0.0.1` e as estatísticas 
 
 Use `portfolio.example.json` como referência: todo o conteúdo é fictício. Nunca versione seu `portfolio.json` real.
 
-## Stack React + FastAPI (migração em andamento)
+## Stack React + FastAPI
 
-As telas estão sendo migradas para React + TypeScript conforme o
+As telas foram migradas para React + TypeScript conforme o
 [roadmap](docs/ROADMAP_REACT_MIGRATION.md); as regras financeiras continuam nos
-módulos `src/` e são expostas pela API em `api/`. Nesta etapa (Fases 0 e 1),
-o **Ledger e operações** já opera na interface React e o container único serve
+módulos `src/` e são expostas pela API em `api/`. As fases 0 a 6 estão
+concluídas: todas as telas operam na interface React e o container único serve
 o frontend compilado pelo FastAPI.
 
 Desenvolvimento local do frontend:
@@ -41,7 +41,7 @@ Run local com a interface React servida pelo FastAPI:
 python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
 ```
 
-O Streamlit (`python -m streamlit run app.py`) permanece disponível como referência, mas a interface React já cobre todas as funcionalidades das telas migradas: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
+O Streamlit (`python -m streamlit run app.py`) permanece disponível apenas como referência legada; a interface React cobre todas as funcionalidades: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
 
 ## Interface e fontes de dados\n\nA Visão geral apresenta patrimônio e alocação conhecidos a partir do snapshot JSON configurado em `PORTFOLIO_PATH`. Ela informa essa origem explicitamente e não combina automaticamente o snapshot com o ledger SQLite. Rentabilidade TWR/XIRR permanece na seção **Minha carteira → Rentabilidade**, pois depende de fluxos e avaliações suficientes. Benchmark ainda não é calculado.\n\nA navegação é centralizada em `app.py` no Streamlit legado; a interface React em `frontend/` usa navegação agrupada, dashboard consolidado pelo endpoint `GET /api/overview` e tabelas que viram cartões no celular. A validação automatizada de overflow cobre 360 px, 390 px, 430 px e desktop.\n\n## Dados e cálculos
 
