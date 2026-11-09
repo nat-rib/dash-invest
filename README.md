@@ -83,7 +83,7 @@ python -m jobs.ingest_cvm --year 2024
 docker exec dash-invest python -m jobs.ingest_cvm --year 2024
 ```
 
-Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Os dados ainda não são exibidos na interface.
+Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Consulta pelos endpoints `GET /api/data/observations` (filtros e paginação) e `GET /api/data/observations/series`. Os dados ainda não são exibidos na interface.
 
 ## Histórico local
 
