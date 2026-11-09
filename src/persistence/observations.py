@@ -6,6 +6,7 @@ uma nova observação e marcam a antiga em `superseded_by`.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -48,60 +49,74 @@ class ObservationRepository:
         publicação ocupa o mesmo slot (provedor, instrumento, métrica, período
         e data de referência), a anterior é marcada como superseded_by.
         """
-        fingerprint = observation.fingerprint()
         with self.database.transaction() as connection:
-            cursor = connection.execute(
-                """INSERT OR IGNORE INTO observations (
-                    fingerprint, provider, instrument_id, metric, value, currency, unit,
-                    period_start, period_end, reference_date, published_at, collected_at,
-                    parser_version, quality_status, source_document, raw_payload
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            observation_id, _ = self._insert(connection, observation)
+            return observation_id
+
+    def record_many(self, observations: Iterable[Observation]) -> int:
+        """Insere um lote em uma única transação e retorna quantas linhas são novas."""
+        inserted = 0
+        with self.database.transaction() as connection:
+            for observation in observations:
+                _, created = self._insert(connection, observation)
+                inserted += int(created)
+        return inserted
+
+    def _insert(self, connection: sqlite3.Connection, observation: Observation) -> tuple[int, bool]:
+        fingerprint = observation.fingerprint()
+        cursor = connection.execute(
+            """INSERT OR IGNORE INTO observations (
+                fingerprint, provider, instrument_id, metric, value, currency, unit,
+                period_start, period_end, reference_date, published_at, collected_at,
+                parser_version, quality_status, source_document, raw_payload
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                fingerprint,
+                observation.provider,
+                observation.instrument_id,
+                observation.metric,
+                decimal_text(observation.value),
+                observation.currency,
+                observation.unit,
+                _optional_iso(observation.period_start),
+                _optional_iso(observation.period_end),
+                observation.reference_date.isoformat(),
+                _optional_iso(observation.published_at),
+                observation.collected_at.isoformat(),
+                observation.parser_version,
+                observation.quality_status.value,
+                observation.source_document,
+                observation.raw_payload,
+            ),
+        )
+        row = connection.execute(
+            "SELECT id FROM observations WHERE fingerprint = ?", (fingerprint,)
+        ).fetchone()
+        observation_id = int(row["id"])
+        created = bool(cursor.rowcount)
+        if created:
+            connection.execute(
+                """UPDATE observations SET superseded_by = ?
+                   WHERE id <> ? AND superseded_by IS NULL
+                     AND provider = ? AND metric = ?
+                     AND instrument_id IS ?
+                     AND reference_date = ?
+                     AND period_start IS ?
+                     AND period_end IS ?
+                     AND published_at IS NOT ?""",
                 (
-                    fingerprint,
+                    observation_id,
+                    observation_id,
                     observation.provider,
-                    observation.instrument_id,
                     observation.metric,
-                    decimal_text(observation.value),
-                    observation.currency,
-                    observation.unit,
+                    observation.instrument_id,
+                    observation.reference_date.isoformat(),
                     _optional_iso(observation.period_start),
                     _optional_iso(observation.period_end),
-                    observation.reference_date.isoformat(),
                     _optional_iso(observation.published_at),
-                    observation.collected_at.isoformat(),
-                    observation.parser_version,
-                    observation.quality_status.value,
-                    observation.source_document,
-                    observation.raw_payload,
                 ),
             )
-            row = connection.execute(
-                "SELECT id FROM observations WHERE fingerprint = ?", (fingerprint,)
-            ).fetchone()
-            observation_id = int(row["id"])
-            if cursor.rowcount:
-                connection.execute(
-                    """UPDATE observations SET superseded_by = ?
-                       WHERE id <> ? AND superseded_by IS NULL
-                         AND provider = ? AND metric = ?
-                         AND instrument_id IS ?
-                         AND reference_date = ?
-                         AND period_start IS ?
-                         AND period_end IS ?
-                         AND published_at IS NOT ?""",
-                    (
-                        observation_id,
-                        observation_id,
-                        observation.provider,
-                        observation.metric,
-                        observation.instrument_id,
-                        observation.reference_date.isoformat(),
-                        _optional_iso(observation.period_start),
-                        _optional_iso(observation.period_end),
-                        _optional_iso(observation.published_at),
-                    ),
-                )
-            return observation_id
+        return observation_id, created
 
     def get(self, observation_id: int) -> Observation | None:
         with self.database.connection() as connection:

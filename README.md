@@ -73,6 +73,18 @@ set -a; source .env; set +a   # carrega no shell antes de subir a API
 
 Em produção o `deploy/compose.yaml` injeta a variável a partir do `.env` da VPS. Nunca versione `.env` ou `secrets.toml`, e nunca passe a chave como `ARG`/`ENV` do `Dockerfile` — ela ficaria na imagem. A consulta envia somente o símbolo do ativo ao Alpha Vantage — não envia saldos, quantidades ou instituições. Por padrão, ações, FIIs e ETFs em BRL usam o sufixo `.SAO`; se necessário, defina `market_symbol` na posição do JSON. A atualização de preços sempre mostra uma prévia e requer confirmação antes de substituir o snapshot.
 
+## Fundamentos de companhias (CVM)
+
+A ingestão de demonstrações financeiras usa os dados abertos da CVM (DFP) e grava observações com proveniência no SQLite:
+
+```bash
+python -m jobs.ingest_cvm --year 2024
+# dentro do container em produção:
+docker exec dash-invest python -m jobs.ingest_cvm --year 2024
+```
+
+Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Os dados ainda não são exibidos na interface.
+
 ## Histórico local
 
 Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/portfolio_history.db`, um banco SQLite local ignorado pelo Git. A página **Histórico** mostra a evolução dos valores e das posições. Ela não calcula retorno TWR, XIRR ou rentabilidade total: para isso também é necessário registrar cada aporte, retirada, imposto e provento.
