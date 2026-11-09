@@ -44,6 +44,10 @@ jobs:
         working-directory: frontend
         run: npm install --no-audit --no-fund && npm run build
 
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
+
       - name: Validate deployment installer syntax
         run: bash -n deploy/install.sh
 

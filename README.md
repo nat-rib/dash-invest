@@ -80,7 +80,8 @@ Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/
 ## Testes
 
 ```bash
-pytest
+pytest                  # backend: domínio, API e persistência
+cd frontend && npm test # frontend: Vitest + Testing Library
 ```
 
 ## Arquitetura e roadmap
