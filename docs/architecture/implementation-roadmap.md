@@ -67,7 +67,9 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - Interfaces de provedores em `src/providers/base.py`.
 - Adaptador **CVM DFP** em `src/providers/cvm.py`: download do ZIP anual, índice de documentos (`DT_RECEB`/link), normalização de escala (`MIL` → unidades) e descarte do exercício comparativo (`PENÚLTIMO`).
 - Job: `python -m jobs.ingest_cvm --year 2024 [--individual]`.
-- Leitura: `GET /api/data/observations` (filtros + paginação) e `GET /api/data/observations/series`.
+- Emissores persistidos por CNPJ (razão social/CD_CVM) em `issuers` (migration `0006`), com atualização idempotente.
+- Leitura: `GET /api/data/issuers`, `GET /api/data/issuers/{cnpj}`, `GET /api/data/observations` (filtros + paginação) e `GET /api/data/observations/series`.
+- Interface: página **Fundamentos** (busca de emissor, métrica, série e link para o documento na CVM).
 - Validação com o arquivo real de 2024: 16.388 observações consolidadas do DRE, todas com `published_at`, link do documento e moeda BRL; 1.869 métricas canônicas.
 - Pendentes: ITR, Parquet/DuckDB, SEC e exposição na interface.
 

@@ -11,6 +11,7 @@ from src.providers.cvm import (
     CvmParseError,
     dfp_url,
     parse_document_index,
+    parse_issuers,
     parse_statement,
 )
 
@@ -136,10 +137,29 @@ def test_provider_le_zip_sem_rede(monkeypatch):
 
     monkeypatch.setattr("src.providers.cvm.download_dfp", fake_download)
 
-    observations = CvmDfpProvider().statements(2024)
+    observations = CvmDfpProvider().fetch(2024).observations
 
     metrics = {item.metric for item in observations}
     assert {"revenue", "net_income", "total_assets", "cvm_dfp.dre.9.99"} <= metrics
     total_assets = next(item for item in observations if item.metric == "total_assets")
     assert total_assets.value == Decimal("2000000.0000000000")
     assert total_assets.source_document == "http://example/doc"
+
+
+def test_parse_issuers_deduplica_mantendo_publicacao_mais_recente():
+    documents = parse_document_index(
+        "\n".join(
+            [
+                INDEX_HEADER,
+                f"{CNPJ};2023-12-31;1;{COMPANY} ANTIGA;001023;DFP;1;2024-02-01;http://example/2023",
+                f"{CNPJ};2024-12-31;2;{COMPANY};001023;DFP;2;2025-02-19;http://example/2024",
+            ]
+        )
+    )
+
+    issuers = parse_issuers(documents)
+
+    assert len(issuers) == 1
+    assert issuers[0].name == COMPANY
+    assert issuers[0].cvm_code == "001023"
+    assert issuers[0].updated_at.date().isoformat() == "2025-02-19"

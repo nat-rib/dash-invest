@@ -12,6 +12,7 @@ from pathlib import Path
 
 from src.application.fundamentals import FundamentalsIngestion
 from src.persistence.database import SQLiteDatabase
+from src.persistence.issuers import IssuerRepository
 from src.persistence.observations import ObservationRepository
 from src.providers.cvm import CvmDfpProvider
 
@@ -38,11 +39,16 @@ def main(argv: list[str] | None = None) -> int:
     database.initialize()
 
     provider = CvmDfpProvider(consolidated=not args.individual)
-    inserted = FundamentalsIngestion(
-        provider=provider, repository=ObservationRepository(database)
+    result = FundamentalsIngestion(
+        provider=provider,
+        repository=ObservationRepository(database),
+        issuers=IssuerRepository(database),
     ).run(args.year)
 
-    print(f"{inserted} novas observações da CVM DFP {args.year}")
+    print(
+        f"{result.observations} novas observações e "
+        f"{result.issuers} novos emissores da CVM DFP {args.year}"
+    )
     return 0
 
 

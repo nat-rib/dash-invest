@@ -4,16 +4,29 @@ from decimal import Decimal
 import pytest
 
 from src.application.fundamentals import FundamentalsIngestion
+from src.domain.issuers import Issuer
 from src.domain.observations import Observation
 from src.persistence.database import SQLiteDatabase
+from src.persistence.issuers import IssuerRepository
 from src.persistence.observations import ObservationRepository
+from src.providers.base import FundamentalsBatch
 
 
 @pytest.fixture
-def repository(tmp_path):
-    database = SQLiteDatabase(tmp_path / "observations.db")
-    database.initialize()
+def database(tmp_path):
+    db = SQLiteDatabase(tmp_path / "observations.db")
+    db.initialize()
+    return db
+
+
+@pytest.fixture
+def observations(database):
     return ObservationRepository(database)
+
+
+@pytest.fixture
+def issuers(database):
+    return IssuerRepository(database)
 
 
 def make_observation(metric: str, value: str) -> Observation:
@@ -31,35 +44,81 @@ def make_observation(metric: str, value: str) -> Observation:
     )
 
 
+def make_issuer(name: str = "EMPRESA TESTE S.A.") -> Issuer:
+    return Issuer(
+        cnpj="00.000.000/0001-91",
+        name=name,
+        cvm_code="001023",
+        updated_at=datetime(2025, 2, 19, tzinfo=timezone.utc),
+    )
+
+
 class FakeProvider:
     name = "fake"
 
-    def __init__(self, observations: list[Observation]):
-        self._observations = observations
+    def __init__(self, batch: FundamentalsBatch):
+        self._batch = batch
 
-    def statements(self, fiscal_year: int) -> list[Observation]:
+    def fetch(self, fiscal_year: int) -> FundamentalsBatch:
         assert fiscal_year == 2024
-        return self._observations
+        return self._batch
 
 
-def test_ingestao_persiste_lote_e_e_idempotente(repository):
-    observations = [make_observation("revenue", "1000"), make_observation("net_income", "100")]
-    ingestion = FundamentalsIngestion(provider=FakeProvider(observations), repository=repository)
+def test_ingestao_persiste_emissores_e_observacoes(observations, issuers):
+    batch = FundamentalsBatch(
+        observations=[make_observation("revenue", "1000"), make_observation("net_income", "100")],
+        issuers=[make_issuer()],
+    )
+    ingestion = FundamentalsIngestion(
+        provider=FakeProvider(batch), repository=observations, issuers=issuers
+    )
 
-    assert ingestion.run(2024) == 2
-    assert ingestion.run(2024) == 0
-    assert len(repository.list(provider="cvm")) == 2
+    first = ingestion.run(2024)
+    second = ingestion.run(2024)
+
+    assert (first.issuers, first.observations) == (1, 2)
+    assert (second.issuers, second.observations) == (0, 0)
+    assert len(observations.list(provider="cvm")) == 2
+    assert [item.name for item in issuers.list()] == ["EMPRESA TESTE S.A."]
 
 
-def test_record_many_retorna_apenas_linhas_novas(repository):
+def test_record_many_retorna_apenas_linhas_novas(observations):
     first = make_observation("revenue", "1000")
     second = make_observation("net_income", "100")
     corrected = make_observation("net_income", "110")
 
-    assert repository.record_many([first, second]) == 2
-    assert repository.record_many([first, second]) == 0
-    assert repository.record_many([corrected]) == 1
+    assert observations.record_many([first, second]) == 2
+    assert observations.record_many([first, second]) == 0
+    assert observations.record_many([corrected]) == 1
 
-    current = {item.metric: item.value for item in repository.list()}
+    current = {item.metric: item.value for item in observations.list()}
     assert current == {"revenue": Decimal("1000"), "net_income": Decimal("110")}
-    assert len(repository.list(include_superseded=True)) == 3
+    assert len(observations.list(include_superseded=True)) == 3
+
+
+def test_upsert_issuer_atualiza_sem_duplicar(issuers):
+    assert issuers.upsert(make_issuer("NOME ANTIGO")) is True
+
+    assert issuers.upsert(make_issuer("NOME NOVO")) is False
+    assert issuers.count() == 1
+
+    stored = issuers.get("00.000.000/0001-91")
+    assert stored is not None
+    assert stored.cnpj == "00000000000191"
+    assert stored.name == "NOME NOVO"
+    assert stored.cvm_code == "001023"
+
+
+def test_issuers_filtra_por_nome_ou_cnpj(issuers):
+    issuers.upsert(make_issuer("PETROBRAS"))
+    issuers.upsert(
+        Issuer(
+            cnpj="11.111.111/0001-11",
+            name="VALE",
+            updated_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        )
+    )
+
+    assert [item.name for item in issuers.list(query="petro")] == ["PETROBRAS"]
+    assert [item.name for item in issuers.list(query="11111111")] == ["VALE"]
+    assert issuers.count(query="a") == 2

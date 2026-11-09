@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.dependencies import Repositories as RepositoryBundle
 from api.dependencies import get_repositories
+from api.schemas.issuers import IssuerListOut, IssuerOut
 from api.schemas.observations import (
     ObservationListOut,
     ObservationOut,
@@ -50,6 +51,29 @@ def list_observations(
     )
 
 
+@router.get("/data/issuers", response_model=IssuerListOut)
+def list_issuers(
+    repositories: Repositories,
+    query: str | None = Query(default=None),
+    limit: int = Query(default=200, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
+) -> IssuerListOut:
+    items = repositories.issuers.list(query=query, limit=limit, offset=offset)
+    total = repositories.issuers.count(query=query)
+    return IssuerListOut(
+        items=[IssuerOut.model_validate(item) for item in items],
+        total=total,
+    )
+
+
+@router.get("/data/issuers/{cnpj:path}", response_model=IssuerOut)
+def get_issuer(repositories: Repositories, cnpj: str) -> IssuerOut:
+    issuer = repositories.issuers.get(cnpj)
+    if issuer is None:
+        raise HTTPException(status_code=404, detail="Emissor não encontrado.")
+    return IssuerOut.model_validate(issuer)
+
+
 @router.get("/data/observations/series", response_model=ObservationSeriesOut)
 def observation_series(
     repositories: Repositories,
@@ -72,6 +96,7 @@ def observation_series(
                 published_at=item.published_at,
                 value=item.value,
                 currency=item.currency,
+                source_document=item.source_document,
             )
             for item in observations
         ],

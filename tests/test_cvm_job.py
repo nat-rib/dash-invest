@@ -2,7 +2,9 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from jobs import ingest_cvm
+from src.domain.issuers import Issuer
 from src.domain.observations import Observation
+from src.providers.base import FundamentalsBatch
 
 
 def make_observation() -> Observation:
@@ -18,13 +20,22 @@ def make_observation() -> Observation:
     )
 
 
+def make_issuer() -> Issuer:
+    return Issuer(
+        cnpj="00000000000191",
+        name="EMPRESA TESTE S.A.",
+        cvm_code="001023",
+        updated_at=datetime(2025, 2, 19, tzinfo=timezone.utc),
+    )
+
+
 class FakeProvider:
     def __init__(self, *, consolidated: bool = True):
         assert consolidated is True
 
-    def statements(self, fiscal_year: int) -> list[Observation]:
+    def fetch(self, fiscal_year: int) -> FundamentalsBatch:
         assert fiscal_year == 2024
-        return [make_observation()]
+        return FundamentalsBatch(observations=[make_observation()], issuers=[make_issuer()])
 
 
 def test_cli_ingere_e_reporta(tmp_path, monkeypatch, capsys):
@@ -33,4 +44,5 @@ def test_cli_ingere_e_reporta(tmp_path, monkeypatch, capsys):
     exit_code = ingest_cvm.main(["--year", "2024", "--db", str(tmp_path / "dash.db")])
 
     assert exit_code == 0
-    assert "1 novas observações da CVM DFP 2024" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "1 novas observações e 1 novos emissores da CVM DFP 2024" in output
