@@ -134,14 +134,14 @@ class ObservationRepository:
             return None
         return int(row["superseded_by"])
 
-    def list(
+    def _filters(
         self,
         *,
-        provider: str | None = None,
-        instrument_id: str | None = None,
-        metric: str | None = None,
-        include_superseded: bool = False,
-    ) -> list[Observation]:
+        provider: str | None,
+        instrument_id: str | None,
+        metric: str | None,
+        include_superseded: bool,
+    ) -> tuple[list[str], list[object]]:
         clauses: list[str] = []
         params: list[object] = []
         if provider is not None:
@@ -155,11 +155,55 @@ class ObservationRepository:
             params.append(metric)
         if not include_superseded:
             clauses.append("superseded_by IS NULL")
+        return clauses, params
 
+    def count(
+        self,
+        *,
+        provider: str | None = None,
+        instrument_id: str | None = None,
+        metric: str | None = None,
+        include_superseded: bool = False,
+    ) -> int:
+        clauses, params = self._filters(
+            provider=provider,
+            instrument_id=instrument_id,
+            metric=metric,
+            include_superseded=include_superseded,
+        )
+        query = "SELECT COUNT(*) AS total FROM observations"
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        with self.database.connection() as connection:
+            row = connection.execute(query, params).fetchone()
+        return int(row["total"])
+
+    def list(
+        self,
+        *,
+        provider: str | None = None,
+        instrument_id: str | None = None,
+        metric: str | None = None,
+        include_superseded: bool = False,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Observation]:
+        clauses, params = self._filters(
+            provider=provider,
+            instrument_id=instrument_id,
+            metric=metric,
+            include_superseded=include_superseded,
+        )
         query = "SELECT * FROM observations"
         if clauses:
             query += " WHERE " + " AND ".join(clauses)
         query += " ORDER BY reference_date, collected_at, id"
+        if limit is not None:
+            query += " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+        elif offset:
+            query += " LIMIT -1 OFFSET ?"
+            params.append(offset)
 
         with self.database.connection() as connection:
             return [_from_row(row) for row in connection.execute(query, params)]
