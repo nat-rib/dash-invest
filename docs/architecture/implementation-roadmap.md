@@ -62,6 +62,8 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - [ ] Controles de qualidade, reapresentações e atualização.
 - [ ] SEC EDGAR/XBRL como fonte para empresas americanas.
 
+**Estado (08/11/2026):** fundação de proveniência entregue — modelo `Observation` em `src/domain/observations.py`, tabela `observations` (migration `0005`) e repositório append-only com supersessão em `src/persistence/observations.py`. Reapresentações geram nova linha e marcam a anterior em `superseded_by`, sem apagar histórico; reingestão idêntica é idempotente. Pendentes: adaptadores de provedores (CVM/SEC), Parquet/DuckDB e validação em escala.
+
 **Aceite:** pipelines idempotentes; cada número rastreável até provedor e data; ausências preservadas; reapresentações não sobrescrevem silenciosamente a história.
 
 ## Fase 4 — Risk Engine
