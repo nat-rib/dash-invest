@@ -36,6 +36,7 @@ class ObservationSeriesPoint(BaseModel):
     published_at: datetime | None = None
     value: Decimal
     currency: str | None = None
+    source_document: str | None = None
 
 
 class ObservationSeriesOut(BaseModel):

@@ -9,6 +9,7 @@ from functools import lru_cache
 
 from src.importers.transactions_csv import CanonicalTransactionCsvImporter
 from src.persistence.database import SQLiteDatabase
+from src.persistence.issuers import IssuerRepository
 from src.persistence.observations import ObservationRepository
 from src.persistence.repositories import (
     InstrumentRepository, PortfolioPositionRepository, PortfolioRepository,
@@ -36,6 +37,7 @@ class Repositories:
         self.transfer_links = TransferLinkRepository(database)
         self.performance_periods = PerformancePeriodRepository(database)
         self.observations = ObservationRepository(database)
+        self.issuers = IssuerRepository(database)
         self.snapshot_importer = PortfolioSnapshotImporter(database)
 
     def transactions_importer(self) -> CanonicalTransactionCsvImporter:

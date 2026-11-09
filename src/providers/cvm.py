@@ -23,7 +23,9 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import Decimal, InvalidOperation
 
+from src.domain.issuers import Issuer
 from src.domain.observations import Observation, QualityStatus
+from src.providers.base import FundamentalsBatch
 
 DFP_BASE_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/DFP/DADOS"
 PARSER_VERSION = "cvm-dfp-v1"
@@ -135,6 +137,38 @@ def parse_document_index(text: str | bytes) -> dict[str, CvmDocument]:
     return documents
 
 
+def parse_issuers(
+    documents: Mapping[str, CvmDocument], *, source: str = "cvm"
+) -> list[Issuer]:
+    """Deduplica emissores por CNPJ mantendo a publicação mais recente."""
+    latest: dict[str, CvmDocument] = {}
+    for document in documents.values():
+        current = latest.get(document.cnpj)
+        if current is None or (document.reference_date, document.version) > (
+            current.reference_date,
+            current.version,
+        ):
+            latest[document.cnpj] = document
+
+    issuers: list[Issuer] = []
+    for document in latest.values():
+        updated_at = (
+            datetime.combine(document.received_at, time.min, tzinfo=timezone.utc)
+            if document.received_at is not None
+            else datetime.now(timezone.utc)
+        )
+        issuers.append(
+            Issuer(
+                cnpj=document.cnpj,
+                name=document.company_name or f"CNPJ {document.cnpj}",
+                cvm_code=document.cvm_code or None,
+                source=source,
+                updated_at=updated_at,
+            )
+        )
+    return issuers
+
+
 def _currency(value: str) -> str | None:
     normalized = _normalize_token(value)
     return CVM_CURRENCIES.get(normalized)
@@ -243,7 +277,7 @@ class CvmDfpProvider:
     timeout: int = 180
     consolidated: bool = True
 
-    def statements(self, fiscal_year: int) -> list[Observation]:
+    def fetch(self, fiscal_year: int) -> FundamentalsBatch:
         archive = CvmDfpArchive(download_dfp(fiscal_year, timeout=self.timeout))
         names = set(archive.names())
 
@@ -267,4 +301,8 @@ class CvmDfpProvider:
                     parser_version=self.parser_version,
                 )
             )
-        return observations
+
+        return FundamentalsBatch(
+            observations=observations,
+            issuers=parse_issuers(documents),
+        )

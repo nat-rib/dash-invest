@@ -7,11 +7,20 @@ dados ausentes: ausência simplesmente não gera observação.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Protocol
 
+from src.domain.issuers import Issuer
 from src.domain.observations import Observation
+
+
+@dataclass(frozen=True)
+class FundamentalsBatch:
+    """Resultado de um exercício: observações normalizadas e emissores vistos."""
+
+    observations: list[Observation]
+    issuers: list[Issuer] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -38,8 +47,8 @@ class MarketDataProvider(Protocol):
 class FundamentalsProvider(Protocol):
     name: str
 
-    def statements(self, fiscal_year: int) -> Iterable[Observation]:
-        """Fundamentos publicados para um exercício fiscal."""
+    def fetch(self, fiscal_year: int) -> FundamentalsBatch:
+        """Observações e emissores publicados para um exercício fiscal."""
 
 
 class MacroDataProvider(Protocol):

@@ -18,6 +18,7 @@ const NAV_GROUPS = [
     label: "Investigar",
     items: [
       { to: "/analysis", label: "Análise", icon: "📊" },
+      { to: "/fundamentos", label: "Fundamentos", icon: "🏦" },
       { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
     ],
   },

@@ -4,6 +4,7 @@ import AmortizacaoPage from "./pages/AmortizacaoPage";
 import AppLayout from "./layouts/AppLayout";
 import CarteiraPage from "./pages/CarteiraPage";
 import DashboardPage from "./pages/DashboardPage";
+import FundamentalsPage from "./pages/FundamentalsPage";
 import HistoricoPage from "./pages/HistoricoPage";
 import ImportPage from "./pages/ImportPage";
 import LedgerPage from "./pages/LedgerPage";
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="performance" element={<PerformancePage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="analysis" element={<AnalysisPage />} />
+        <Route path="fundamentos" element={<FundamentalsPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />
         <Route path="amortizacao" element={<AmortizacaoPage />} />

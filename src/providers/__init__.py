@@ -2,6 +2,7 @@
 from src.providers.base import (
     DocumentRef,
     DocumentsProvider,
+    FundamentalsBatch,
     FundamentalsProvider,
     MacroDataProvider,
     MarketDataProvider,
@@ -10,6 +11,7 @@ from src.providers.base import (
 __all__ = [
     "DocumentRef",
     "DocumentsProvider",
+    "FundamentalsBatch",
     "FundamentalsProvider",
     "MacroDataProvider",
     "MarketDataProvider",
