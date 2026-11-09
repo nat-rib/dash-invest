@@ -24,6 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=app:app api/ ./api/
 COPY --chown=app:app src/ ./src/
+COPY --chown=app:app jobs/ ./jobs/
 # O container serve apenas o frontend React compilado pelo FastAPI.
 COPY --from=frontend-build --chown=app:app /build/dist ./frontend/dist
 

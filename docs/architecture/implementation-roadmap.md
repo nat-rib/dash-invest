@@ -55,14 +55,20 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 **Estimativa:** 1–2 semanas.
 
-- [ ] Interfaces para preços, fundamentos, macro e documentos.
-- [ ] Ingestão inicial CVM DFP/ITR e normalização.
-- [ ] Persistir dados brutos e normalizados com proveniência.
+- [x] Interfaces para preços, fundamentos, macro e documentos (`src/providers/base.py`).
+- [ ] Ingestão inicial CVM DFP/ITR e normalização. **DFP entregue; ITR pendente.**
+- [x] Persistir dados brutos e normalizados com proveniência.
 - [ ] Parquet para séries; DuckDB para consultas analíticas.
 - [ ] Controles de qualidade, reapresentações e atualização.
 - [ ] SEC EDGAR/XBRL como fonte para empresas americanas.
 
-**Estado (08/11/2026):** fundação de proveniência entregue — modelo `Observation` em `src/domain/observations.py`, tabela `observations` (migration `0005`) e repositório append-only com supersessão em `src/persistence/observations.py`. Reapresentações geram nova linha e marcam a anterior em `superseded_by`, sem apagar histórico; reingestão idêntica é idempotente. Pendentes: adaptadores de provedores (CVM/SEC), Parquet/DuckDB e validação em escala.
+**Estado (09/11/2026):** fundação de proveniência e primeiro provedor entregues.
+- `Observation` (`src/domain/observations.py`), tabela `observations` (migration `0005`) e repositório append-only com supersessão (`src/persistence/observations.py`); inserção em lote por transação.
+- Interfaces de provedores em `src/providers/base.py`.
+- Adaptador **CVM DFP** em `src/providers/cvm.py`: download do ZIP anual, índice de documentos (`DT_RECEB`/link), normalização de escala (`MIL` → unidades) e descarte do exercício comparativo (`PENÚLTIMO`).
+- Job: `python -m jobs.ingest_cvm --year 2024 [--individual]`.
+- Validação com o arquivo real de 2024: 16.388 observações consolidadas do DRE, todas com `published_at`, link do documento e moeda BRL; 1.869 métricas canônicas.
+- Pendentes: ITR, Parquet/DuckDB, SEC e exposição na interface.
 
 **Aceite:** pipelines idempotentes; cada número rastreável até provedor e data; ausências preservadas; reapresentações não sobrescrevem silenciosamente a história.
 
