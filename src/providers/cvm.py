@@ -18,7 +18,8 @@ import json
 import unicodedata
 import urllib.request
 import zipfile
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import Decimal, InvalidOperation
@@ -76,6 +77,16 @@ class CvmArchive:
         with zipfile.ZipFile(io.BytesIO(self.payload)) as archive:
             return archive.read(name).decode(encoding)
 
+    @contextmanager
+    def open_text(
+        self, name: str, encoding: str = "iso-8859-1"
+    ) -> Iterator[io.TextIOWrapper]:
+        """Abre um membro como stream de texto, sem carregar o CSV inteiro na memória."""
+        with zipfile.ZipFile(io.BytesIO(self.payload)) as archive:
+            with archive.open(name) as raw:
+                with io.TextIOWrapper(raw, encoding=encoding, newline="") as text:
+                    yield text
+
 
 def dfp_url(year: int) -> str:
     if not 1999 <= year <= 2100:
@@ -103,9 +114,12 @@ def _normalize_token(value: str) -> str:
     return decomposed.encode("ascii", "ignore").decode("ascii").strip().upper()
 
 
-def _reader(text: str) -> csv.DictReader:
-    stream = io.StringIO(text.lstrip("\ufeff"))
-    return csv.DictReader(stream, delimiter=";")
+def _reader(source: str | bytes | Iterable[str]) -> csv.DictReader:
+    if isinstance(source, bytes):
+        source = source.decode("iso-8859-1")
+    if isinstance(source, str):
+        source = io.StringIO(source.lstrip("\ufeff"))
+    return csv.DictReader(source, delimiter=";")
 
 
 def _document_key(cnpj: str, reference_date: date, version: int) -> str:
@@ -199,8 +213,8 @@ def _scope_matches(group: str, consolidated: bool | None) -> bool:
     return "INDIVIDUAL" in normalized
 
 
-def parse_statement(
-    text: str | bytes,
+def iter_statement(
+    source: str | bytes | Iterable[str],
     *,
     statement: str,
     documents: Mapping[str, CvmDocument] | None = None,
@@ -209,16 +223,12 @@ def parse_statement(
     provider: str = "cvm",
     metric_prefix: str = "cvm_dfp",
     long_period_suffix: str | None = None,
-) -> list[Observation]:
+) -> Iterator[Observation]:
     statement = statement.strip().upper()
     if statement not in CVM_STATEMENTS:
         raise ValueError(f"demonstração não suportada: {statement}")
 
-    if isinstance(text, bytes):
-        text = text.decode("iso-8859-1")
-
-    observations: list[Observation] = []
-    for row in _reader(text):
+    for row in _reader(source):
         if not (row.get("CNPJ_CIA") or "").strip():
             continue
         if _normalize_token(row.get("ORDEM_EXERC", "")) != "ULTIMO":
@@ -258,25 +268,48 @@ def parse_statement(
             else None
         )
 
-        observations.append(
-            Observation(
-                provider=provider,
-                metric=metric,
-                instrument_id=f"cnpj:{cnpj}",
-                value=_decimal(raw_value) * _scale(row.get("ESCALA_MOEDA", "")),
-                currency=_currency(row.get("MOEDA", "")),
-                unit=None,
-                period_start=period_start,
-                period_end=period_end,
-                reference_date=reference_date,
-                published_at=published_at,
-                parser_version=parser_version,
-                quality_status=QualityStatus.VERIFIED,
-                source_document=document.url if document is not None else None,
-                raw_payload=json.dumps(row, ensure_ascii=False, sort_keys=True),
-            )
+        yield Observation(
+            provider=provider,
+            metric=metric,
+            instrument_id=f"cnpj:{cnpj}",
+            value=_decimal(raw_value) * _scale(row.get("ESCALA_MOEDA", "")),
+            currency=_currency(row.get("MOEDA", "")),
+            unit=None,
+            period_start=period_start,
+            period_end=period_end,
+            reference_date=reference_date,
+            published_at=published_at,
+            parser_version=parser_version,
+            quality_status=QualityStatus.VERIFIED,
+            source_document=document.url if document is not None else None,
+            raw_payload=json.dumps(row, ensure_ascii=False, sort_keys=True),
         )
-    return observations
+
+
+def parse_statement(
+    source: str | bytes | Iterable[str],
+    *,
+    statement: str,
+    documents: Mapping[str, CvmDocument] | None = None,
+    consolidated: bool | None = True,
+    parser_version: str = PARSER_VERSION,
+    provider: str = "cvm",
+    metric_prefix: str = "cvm_dfp",
+    long_period_suffix: str | None = None,
+) -> list[Observation]:
+    """Versão em lista de `iter_statement` (conveniente para testes e lotes pequenos)."""
+    return list(
+        iter_statement(
+            source,
+            statement=statement,
+            documents=documents,
+            consolidated=consolidated,
+            parser_version=parser_version,
+            provider=provider,
+            metric_prefix=metric_prefix,
+            long_period_suffix=long_period_suffix,
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -296,24 +329,24 @@ class CvmDfpProvider:
         documents = (
             parse_document_index(archive.read_text(index_name)) if index_name in names else {}
         )
-
         suffix = "con" if self.consolidated else "ind"
-        observations: list[Observation] = []
-        for statement in CVM_STATEMENTS:
-            member = f"dfp_cia_aberta_{statement}_{suffix}_{fiscal_year}.csv"
-            if member not in names:
-                continue
-            observations.extend(
-                parse_statement(
-                    archive.read_text(member),
-                    statement=statement,
-                    documents=documents,
-                    consolidated=self.consolidated,
-                    parser_version=self.parser_version,
-                )
-            )
+
+        def observations() -> Iterator[Observation]:
+            for statement in CVM_STATEMENTS:
+                member = f"dfp_cia_aberta_{statement}_{suffix}_{fiscal_year}.csv"
+                if member not in names:
+                    continue
+                with archive.open_text(member) as stream:
+                    yield from iter_statement(
+                        stream,
+                        statement=statement,
+                        documents=documents,
+                        consolidated=self.consolidated,
+                        parser_version=self.parser_version,
+                        provider=self.name,
+                    )
 
         return FundamentalsBatch(
-            observations=observations,
+            observations=observations(),
             issuers=parse_issuers(documents),
         )

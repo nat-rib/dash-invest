@@ -19,7 +19,7 @@ from src.domain.observations import Observation
 class FundamentalsBatch:
     """Resultado de um exercício: observações normalizadas e emissores vistos."""
 
-    observations: list[Observation]
+    observations: Iterable[Observation]
     issuers: list[Issuer] = field(default_factory=list)
 
 

@@ -11,6 +11,7 @@ métrica pode ser consultada por periodicidade sem colisão.
 from __future__ import annotations
 
 import urllib.request
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from src.domain.observations import Observation
@@ -18,9 +19,9 @@ from src.providers.base import FundamentalsBatch
 from src.providers.cvm import (
     CVM_STATEMENTS,
     CvmArchive,
+    iter_statement,
     parse_document_index,
     parse_issuers,
-    parse_statement,
 )
 
 ITR_BASE_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/ITR/DADOS"
@@ -58,27 +59,26 @@ class CvmItrProvider:
         documents = (
             parse_document_index(archive.read_text(index_name)) if index_name in names else {}
         )
-
         suffix = "con" if self.consolidated else "ind"
-        observations: list[Observation] = []
-        for statement in CVM_STATEMENTS:
-            member = f"itr_cia_aberta_{statement}_{suffix}_{fiscal_year}.csv"
-            if member not in names:
-                continue
-            observations.extend(
-                parse_statement(
-                    archive.read_text(member),
-                    statement=statement,
-                    documents=documents,
-                    consolidated=self.consolidated,
-                    parser_version=self.parser_version,
-                    provider=self.name,
-                    metric_prefix="cvm_itr",
-                    long_period_suffix="_ytd",
-                )
-            )
+
+        def observations() -> Iterator[Observation]:
+            for statement in CVM_STATEMENTS:
+                member = f"itr_cia_aberta_{statement}_{suffix}_{fiscal_year}.csv"
+                if member not in names:
+                    continue
+                with archive.open_text(member) as stream:
+                    yield from iter_statement(
+                        stream,
+                        statement=statement,
+                        documents=documents,
+                        consolidated=self.consolidated,
+                        parser_version=self.parser_version,
+                        provider=self.name,
+                        metric_prefix="cvm_itr",
+                        long_period_suffix="_ytd",
+                    )
 
         return FundamentalsBatch(
-            observations=observations,
+            observations=observations(),
             issuers=parse_issuers(documents, source="cvm"),
         )

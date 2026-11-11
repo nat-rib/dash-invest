@@ -137,7 +137,7 @@ def test_provider_le_zip_sem_rede(monkeypatch):
 
     monkeypatch.setattr("src.providers.cvm.download_dfp", fake_download)
 
-    observations = CvmDfpProvider().fetch(2024).observations
+    observations = list(CvmDfpProvider().fetch(2024).observations)
 
     metrics = {item.metric for item in observations}
     assert {"revenue", "net_income", "total_assets", "cvm_dfp.dre.9.99"} <= metrics
