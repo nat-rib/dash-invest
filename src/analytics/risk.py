@@ -129,6 +129,30 @@ def monthly_returns(points: Sequence[PricePoint]) -> list[MonthlyReturn]:
     return _monthly_returns_from_clean(_clean(points))
 
 
+def return_series(points: Sequence[PricePoint]) -> list[tuple[date, float]]:
+    """Retornos diários alinhados à data do preço de fechamento."""
+    cleaned = _clean(points)
+    return [
+        (cleaned[index][0], cleaned[index][1] / cleaned[index - 1][1] - 1)
+        for index in range(1, len(cleaned))
+    ]
+
+
+def correlation(left: Sequence[PricePoint], right: Sequence[PricePoint]) -> float | None:
+    """Correlação de Pearson entre retornos diários alinhados por data."""
+    left_returns = dict(return_series(left))
+    right_returns = dict(return_series(right))
+    common = sorted(set(left_returns) & set(right_returns))
+    if len(common) < MIN_RETURNS:
+        return None
+    left_values = [left_returns[day] for day in common]
+    right_values = [right_returns[day] for day in common]
+    denominator = _std(left_values) * _std(right_values)
+    if denominator == 0:
+        return None
+    return _covariance(left_values, right_values) / denominator
+
+
 def calculate_risk(
     points: Sequence[PricePoint],
     *,

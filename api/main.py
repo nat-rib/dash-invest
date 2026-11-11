@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api import config
 from api.routes import (
-    analysis, data, import_snapshot, ledger, market, mortgage, overview, performance, risk,
+    analysis, data, fit, import_snapshot, ledger, market, mortgage, overview, performance, risk,
     screener,
 )
 
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(data.router)
     app.include_router(risk.router)
     app.include_router(screener.router)
+    app.include_router(fit.router)
 
     @app.get("/api/health", tags=["health"])
     def health() -> JSONResponse:

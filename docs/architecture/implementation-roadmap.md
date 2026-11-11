@@ -108,11 +108,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 **Estimativa:** 2 semanas.
 
-- [ ] Concentração, correlação, exposição cambial e liquidez.
+- [x] Concentração, correlação, exposição cambial e liquidez.
 - [ ] ETFs com look-through quando composição estiver disponível.
 - [ ] Modelos específicos para FIIs, fundos e renda fixa.
-- [ ] Cobertura de REITs, ações internacionais e cripto.
-- [ ] Separar qualidade do ativo, adequação à carteira e confiança dos dados.
+- [x] Cobertura de REITs, ações internacionais e cripto.
+- [x] Separar qualidade do ativo, adequação à carteira e confiança dos dados.
+
+**Estado (10/11/2026):** Portfolio Fit em `src/analytics/portfolio_fit.py` e `GET /api/fit`: exposição por classe/instituição/moeda, HHI, top posições, cobertura de liquidez/crédito e correlação entre posições com série de preços. Look-through de ETFs, classificação setorial e duration de renda fixa permanecem explicitamente indisponíveis. Página **Portfolio Fit** no React.
 
 **Aceite:** métricas específicas por classe; nenhum score universal enganoso; exposição desconhecida permanece desconhecida.
 
