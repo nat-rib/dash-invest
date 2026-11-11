@@ -82,6 +82,22 @@ def test_ingestao_persiste_emissores_e_observacoes(observations, issuers):
     assert [item.name for item in issuers.list()] == ["EMPRESA TESTE S.A."]
 
 
+def test_ingestao_processa_em_chunks(observations, issuers):
+    generated = (make_observation(f"metric_{index}", str(index)) for index in range(5))
+    batch = FundamentalsBatch(observations=generated, issuers=[])
+    ingestion = FundamentalsIngestion(
+        provider=FakeProvider(batch),
+        repository=observations,
+        issuers=issuers,
+        chunk_size=2,
+    )
+
+    result = ingestion.run(2024)
+
+    assert result.observations == 5
+    assert len(observations.list()) == 5
+
+
 def test_record_many_retorna_apenas_linhas_novas(observations):
     first = make_observation("revenue", "1000")
     second = make_observation("net_income", "100")

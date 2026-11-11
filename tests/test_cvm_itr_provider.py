@@ -75,7 +75,8 @@ def test_provider_separa_trimestre_e_acumulado(monkeypatch):
     monkeypatch.setattr("src.providers.cvm_itr.download_itr", fake_download)
 
     batch = CvmItrProvider().fetch(2024)
-    metrics = {item.metric: item for item in batch.observations}
+    observations = list(batch.observations)
+    metrics = {item.metric: item for item in observations}
 
     assert set(metrics) == {
         "revenue",
@@ -90,7 +91,7 @@ def test_provider_separa_trimestre_e_acumulado(monkeypatch):
     assert metrics["revenue_ytd"].period_start.isoformat() == "2024-01-01"
     assert metrics["total_assets"].period_start is None
 
-    assert all(item.provider == "cvm_itr" for item in batch.observations)
+    assert all(item.provider == "cvm_itr" for item in observations)
     assert metrics["revenue"].source_document == "http://example/itr"
     assert metrics["revenue"].published_at.isoformat() == "2024-08-07T00:00:00+00:00"
 
