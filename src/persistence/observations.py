@@ -112,7 +112,13 @@ class ObservationRepository:
                      AND reference_date = ?
                      AND period_start IS ?
                      AND period_end IS ?
-                     AND published_at IS NOT ?""",
+                     AND (
+                         COALESCE(published_at, '') < COALESCE(?, '')
+                         OR (
+                             COALESCE(published_at, '') = COALESCE(?, '')
+                             AND collected_at < ?
+                         )
+                     )""",
                 (
                     observation_id,
                     observation_id,
@@ -123,9 +129,54 @@ class ObservationRepository:
                     _optional_iso(observation.period_start),
                     _optional_iso(observation.period_end),
                     _optional_iso(observation.published_at),
+                    _optional_iso(observation.published_at),
+                    observation.collected_at.isoformat(),
                 ),
             )
         return observation_id, created
+
+    def repair_supersession(self) -> int:
+        """Marca duplicatas legadas mantendo a versão mais recente por slot.
+
+        Correções do parser que não geraram uma nova ingestão podem deixar mais
+        de uma linha ativa no mesmo slot. Este reparo é idempotente.
+        """
+        with self.database.transaction() as connection:
+            rows = connection.execute(
+                """SELECT id, provider, metric, instrument_id, reference_date,
+                          period_start, period_end, published_at, collected_at
+                   FROM observations
+                   WHERE superseded_by IS NULL
+                   ORDER BY provider, metric, instrument_id, reference_date,
+                            COALESCE(period_start, ''), COALESCE(period_end, ''),
+                            COALESCE(published_at, ''), collected_at, id"""
+            ).fetchall()
+
+            groups: dict[tuple[object, ...], list[int]] = {}
+            for row in rows:
+                key = (
+                    row["provider"],
+                    row["metric"],
+                    row["instrument_id"],
+                    row["reference_date"],
+                    row["period_start"],
+                    row["period_end"],
+                )
+                groups.setdefault(key, []).append(int(row["id"]))
+
+            updated = 0
+            for ids in groups.values():
+                if len(ids) < 2:
+                    continue
+                newest = ids[-1]
+                for previous in ids[:-1]:
+                    connection.execute(
+                        "UPDATE observations SET superseded_by = ? "
+                        "WHERE id = ? AND superseded_by IS NULL",
+                        (newest, previous),
+                    )
+                    updated += 1
+            return updated
 
     def get(self, observation_id: int) -> Observation | None:
         with self.database.connection() as connection:

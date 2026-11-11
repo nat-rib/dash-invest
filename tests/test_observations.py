@@ -120,6 +120,62 @@ def test_reingestao_antiga_nao_reverte_supersessao(repository):
     assert [item.value for item in repository.list()] == [Decimal("1100.00")]
 
 
+def test_correcao_com_mesma_data_de_publicacao_supersede(repository):
+    published = datetime(2025, 2, 19, tzinfo=timezone.utc)
+    original = make_observation(
+        value=Decimal("225"),
+        published_at=published,
+        collected_at=datetime(2025, 3, 1, tzinfo=timezone.utc),
+    )
+    corrected = make_observation(
+        value=Decimal("2567"),
+        published_at=published,
+        collected_at=datetime(2025, 3, 2, tzinfo=timezone.utc),
+    )
+
+    original_id = repository.record(original)
+    corrected_id = repository.record(corrected)
+
+    assert repository.superseded_by(original_id) == corrected_id
+    assert repository.superseded_by(corrected_id) is None
+    assert [item.value for item in repository.list()] == [Decimal("2567")]
+
+
+def test_repair_supersession_marca_duplicatas_legadas(repository):
+    database = repository.database
+    with database.transaction() as connection:
+        for index, value in enumerate(("100", "200"), start=1):
+            connection.execute(
+                """INSERT INTO observations (
+                    fingerprint, provider, instrument_id, metric, value, currency,
+                    period_start, period_end, reference_date, published_at, collected_at,
+                    parser_version, quality_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    f"legacy-{index}",
+                    "cvm",
+                    "cnpj:00000000000191",
+                    "revenue",
+                    value,
+                    "BRL",
+                    None,
+                    None,
+                    "2024-12-31",
+                    "2025-02-19T00:00:00+00:00",
+                    f"2025-03-0{index}T00:00:00+00:00",
+                    "legacy",
+                    "verified",
+                ),
+            )
+
+    assert repository.repair_supersession() == 1
+
+    active = repository.list()
+    assert len(active) == 1
+    assert active[0].value == Decimal("200")
+    assert repository.repair_supersession() == 0
+
+
 def test_filtra_por_provedor_instrumento_e_metrica(repository):
     repository.record(make_observation())
     repository.record(make_observation(metric="net_income", value=Decimal("200")))
