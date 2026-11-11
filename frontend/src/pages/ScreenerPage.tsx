@@ -108,6 +108,12 @@ export default function ScreenerPage() {
             ))}
           </Table>
         )}
+        {!loading && screen && screen.items.length > 0 && (
+          <p className="field-hint">
+            ROE, ROA e margem extremos podem refletir patrimônio pequeno ou evento não
+            recorrente; confira o documento na CVM antes de concluir.
+          </p>
+        )}
       </Card>
 
       <DcfCard />
