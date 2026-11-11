@@ -18,6 +18,10 @@ services:
       # Injetado a partir do .env do diretório do compose (nunca da imagem).
       # Vazio quando não configurado; a aplicação responde com erro explicativo.
       ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY:-}
+      # Gateway de IA opcional (Pesquisa IA); vazio desativa chamadas externas.
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
     volumes:
       - ${APP_DATA_DIR:-/opt/personal-cloud/data/dash-invest}:/app/data
     read_only: true
