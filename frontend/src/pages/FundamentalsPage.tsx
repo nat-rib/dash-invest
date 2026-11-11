@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ResponsiveChart } from "../components/insights";
 import { Button, Card, EmptyState, ErrorBox, Loading, SelectInput, Table } from "../components/ui";
-import type { Issuer, ObservationSeries } from "../services/observations";
+import type { FundamentalsDataset, Issuer, ObservationSeries } from "../services/observations";
 import { fetchIssuers, fetchObservationSeries } from "../services/observations";
 
 const QUICK_METRICS = [
@@ -24,9 +24,14 @@ export default function FundamentalsPage() {
   const [selected, setSelected] = useState("");
   const [metricDraft, setMetricDraft] = useState("revenue");
   const [metric, setMetric] = useState("revenue");
+  const [dataset, setDataset] = useState<FundamentalsDataset>("dfp");
+  const [ytd, setYtd] = useState(false);
   const [series, setSeries] = useState<ObservationSeries | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const apiMetric =
+    dataset === "itr" && ytd && !metric.endsWith("_ytd") ? `${metric}_ytd` : metric;
 
   useEffect(() => {
     fetchIssuers()
@@ -45,7 +50,7 @@ export default function FundamentalsPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchObservationSeries(selected, metric)
+    fetchObservationSeries(selected, apiMetric, dataset)
       .then((data) => {
         if (!cancelled) setSeries(data);
       })
@@ -61,7 +66,7 @@ export default function FundamentalsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selected, metric]);
+  }, [selected, apiMetric, dataset]);
 
   const filteredIssuers = useMemo(() => {
     const query = issuerQuery.trim().toLowerCase();
@@ -109,8 +114,8 @@ export default function FundamentalsPage() {
       <header className="page-header">
         <h1>Fundamentos</h1>
         <p className="muted">
-          Demonstrações financeiras padronizadas da CVM (DFP). Valores normalizados para BRL;
-          exercícios sem publicação não são exibidos como zero.
+          Demonstrações financeiras padronizadas da CVM (DFP anual e ITR trimestral). Valores
+          normalizados para BRL; exercícios sem publicação não são exibidos como zero.
         </p>
       </header>
       <ErrorBoxRender error={error} />
@@ -129,6 +134,21 @@ export default function FundamentalsPage() {
           <div className="field">
             <span className="field-label">Emissor</span>
             <SelectInput value={selected} onChange={setSelected} options={options} />
+          </div>
+          <div className="field">
+            <span className="field-label">Periodicidade</span>
+            <SelectInput
+              value={dataset}
+              onChange={(value) => {
+                const next = value as FundamentalsDataset;
+                setDataset(next);
+                if (next === "dfp") setYtd(false);
+              }}
+              options={[
+                { value: "dfp", label: "Anual (DFP)" },
+                { value: "itr", label: "Trimestral (ITR)" },
+              ]}
+            />
           </div>
         </div>
         <div className="field-row">
@@ -153,6 +173,19 @@ export default function FundamentalsPage() {
           </div>
           <div className="field">
             <span className="field-label">&nbsp;</span>
+            {dataset === "itr" && (
+              <label className="field-hint">
+                <input
+                  type="checkbox"
+                  checked={ytd}
+                  onChange={(event) => setYtd(event.target.checked)}
+                />{" "}
+                Acumulado no ano (YTD)
+              </label>
+            )}
+          </div>
+          <div className="field">
+            <span className="field-label">&nbsp;</span>
             <Button variant="primary" onClick={() => applyMetric(metricDraft)}>
               Consultar
             </Button>
@@ -171,7 +204,9 @@ export default function FundamentalsPage() {
         title="Série histórica"
         subtitle={
           selectedIssuer
-            ? `${selectedIssuer.name} · ${METRIC_LABELS[metric] ?? metric}`
+            ? `${selectedIssuer.name} · ${METRIC_LABELS[metric] ?? metric} · ${
+                dataset === "itr" ? (ytd ? "acumulado no ano" : "trimestral") : "anual"
+              }`
             : "Selecione um emissor e uma métrica."
         }
       >

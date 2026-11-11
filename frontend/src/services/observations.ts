@@ -28,6 +28,8 @@ export interface ObservationSeries {
   points: ObservationSeriesPoint[];
 }
 
+export type FundamentalsDataset = "dfp" | "itr";
+
 export function fetchIssuers(query?: string): Promise<IssuerList> {
   const params = new URLSearchParams({ limit: "2000" });
   if (query) params.set("query", query);
@@ -37,10 +39,11 @@ export function fetchIssuers(query?: string): Promise<IssuerList> {
 export function fetchObservationSeries(
   cnpj: string,
   metric: string,
+  dataset: FundamentalsDataset = "dfp",
 ): Promise<ObservationSeries> {
   const digits = cnpj.replace(/\D/g, "");
   const params = new URLSearchParams({
-    provider: "cvm",
+    provider: dataset === "itr" ? "cvm_itr" : "cvm",
     metric,
     instrument_id: `cnpj:${digits}`,
   });

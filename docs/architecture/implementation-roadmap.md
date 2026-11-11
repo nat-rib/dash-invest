@@ -56,7 +56,7 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 **Estimativa:** 1–2 semanas.
 
 - [x] Interfaces para preços, fundamentos, macro e documentos (`src/providers/base.py`).
-- [ ] Ingestão inicial CVM DFP/ITR e normalização. **DFP entregue; ITR pendente.**
+- [x] Ingestão inicial CVM DFP/ITR e normalização.
 - [x] Persistir dados brutos e normalizados com proveniência.
 - [ ] Parquet para séries; DuckDB para consultas analíticas.
 - [ ] Controles de qualidade, reapresentações e atualização.
@@ -66,12 +66,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 - `Observation` (`src/domain/observations.py`), tabela `observations` (migration `0005`) e repositório append-only com supersessão (`src/persistence/observations.py`); inserção em lote por transação.
 - Interfaces de provedores em `src/providers/base.py`.
 - Adaptador **CVM DFP** em `src/providers/cvm.py`: download do ZIP anual, índice de documentos (`DT_RECEB`/link), normalização de escala (`MIL` → unidades) e descarte do exercício comparativo (`PENÚLTIMO`).
-- Job: `python -m jobs.ingest_cvm --year 2024 [--individual]`.
+- Adaptador **CVM ITR** em `src/providers/cvm_itr.py`: mesmo parser, separando trimestre (`revenue`) de acumulado do ano (`revenue_ytd`) pelo tamanho do período; provider `cvm_itr`.
+- Job: `python -m jobs.ingest_cvm --year 2024 [--dataset itr] [--individual]`.
 - Emissores persistidos por CNPJ (razão social/CD_CVM) em `issuers` (migration `0006`), com atualização idempotente.
 - Leitura: `GET /api/data/issuers`, `GET /api/data/issuers/{cnpj}`, `GET /api/data/observations` (filtros + paginação) e `GET /api/data/observations/series`.
-- Interface: página **Fundamentos** (busca de emissor, métrica, série e link para o documento na CVM).
-- Validação com o arquivo real de 2024: 16.388 observações consolidadas do DRE, todas com `published_at`, link do documento e moeda BRL; 1.869 métricas canônicas.
-- Pendentes: ITR, Parquet/DuckDB, SEC e exposição na interface.
+- Interface: página **Fundamentos** (emissor, periodicidade anual/trimestral, métrica, série e link para o documento na CVM).
+- Validação com os arquivos reais de 2024: 100.866 observações anuais em 709 emissores e 335.793 trimestrais em 728 emissores; ingestão do ITR em ~11 s.
+- Pendentes: Parquet/DuckDB, SEC e controles de qualidade em escala.
 
 **Aceite:** pipelines idempotentes; cada número rastreável até provedor e data; ausências preservadas; reapresentações não sobrescrevem silenciosamente a história.
 

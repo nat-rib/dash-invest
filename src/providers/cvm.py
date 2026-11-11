@@ -29,7 +29,7 @@ from src.providers.base import FundamentalsBatch
 
 DFP_BASE_URL = "https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/DFP/DADOS"
 PARSER_VERSION = "cvm-dfp-v1"
-DFP_STATEMENTS = ("DRE", "BPA", "BPP")
+CVM_STATEMENTS = ("DRE", "BPA", "BPP")
 
 # Mapeamento best-effort de contas padronizadas para métricas canônicas.
 # O código original sempre permanece em `raw_payload`.
@@ -65,7 +65,7 @@ class CvmDocument:
 
 
 @dataclass(frozen=True)
-class CvmDfpArchive:
+class CvmArchive:
     payload: bytes
 
     def names(self) -> list[str]:
@@ -206,9 +206,12 @@ def parse_statement(
     documents: Mapping[str, CvmDocument] | None = None,
     consolidated: bool | None = True,
     parser_version: str = PARSER_VERSION,
+    provider: str = "cvm",
+    metric_prefix: str = "cvm_dfp",
+    long_period_suffix: str | None = None,
 ) -> list[Observation]:
     statement = statement.strip().upper()
-    if statement not in DFP_STATEMENTS:
+    if statement not in CVM_STATEMENTS:
         raise ValueError(f"demonstração não suportada: {statement}")
 
     if isinstance(text, bytes):
@@ -238,7 +241,15 @@ def parse_statement(
             else None
         )
         account = (row.get("CD_CONTA") or "").strip()
-        metric = CANONICAL_METRICS.get((statement, account), f"cvm_dfp.{statement.lower()}.{account}")
+        metric = CANONICAL_METRICS.get(
+            (statement, account), f"{metric_prefix}.{statement.lower()}.{account}"
+        )
+        if (
+            long_period_suffix
+            and period_start is not None
+            and (period_end - period_start).days > 120
+        ):
+            metric = f"{metric}{long_period_suffix}"
 
         document = (documents or {}).get(_document_key(cnpj, reference_date, version))
         published_at = (
@@ -249,7 +260,7 @@ def parse_statement(
 
         observations.append(
             Observation(
-                provider="cvm",
+                provider=provider,
                 metric=metric,
                 instrument_id=f"cnpj:{cnpj}",
                 value=_decimal(raw_value) * _scale(row.get("ESCALA_MOEDA", "")),
@@ -278,7 +289,7 @@ class CvmDfpProvider:
     consolidated: bool = True
 
     def fetch(self, fiscal_year: int) -> FundamentalsBatch:
-        archive = CvmDfpArchive(download_dfp(fiscal_year, timeout=self.timeout))
+        archive = CvmArchive(download_dfp(fiscal_year, timeout=self.timeout))
         names = set(archive.names())
 
         index_name = f"dfp_cia_aberta_{fiscal_year}.csv"
@@ -288,7 +299,7 @@ class CvmDfpProvider:
 
         suffix = "con" if self.consolidated else "ind"
         observations: list[Observation] = []
-        for statement in DFP_STATEMENTS:
+        for statement in CVM_STATEMENTS:
             member = f"dfp_cia_aberta_{statement}_{suffix}_{fiscal_year}.csv"
             if member not in names:
                 continue

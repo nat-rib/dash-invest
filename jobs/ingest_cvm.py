@@ -1,7 +1,8 @@
-"""CLI: ingere fundamentos da CVM (DFP) no banco de observações.
+"""CLI: ingere fundamentos da CVM (DFP anual ou ITR trimestral).
 
 Uso:
-    python -m jobs.ingest_cvm --year 2024
+    python -m jobs.ingest_cvm --year 2024                  # DFP anual
+    python -m jobs.ingest_cvm --year 2024 --dataset itr    # ITR trimestral
     python -m jobs.ingest_cvm --year 2024 --individual
 """
 from __future__ import annotations
@@ -15,11 +16,18 @@ from src.persistence.database import SQLiteDatabase
 from src.persistence.issuers import IssuerRepository
 from src.persistence.observations import ObservationRepository
 from src.providers.cvm import CvmDfpProvider
+from src.providers.cvm_itr import CvmItrProvider
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Ingere fundamentos da CVM DFP.")
-    parser.add_argument("--year", type=int, required=True, help="exercício fiscal da DFP")
+    parser = argparse.ArgumentParser(description="Ingere fundamentos da CVM.")
+    parser.add_argument("--year", type=int, required=True, help="exercício fiscal")
+    parser.add_argument(
+        "--dataset",
+        choices=("dfp", "itr"),
+        default="dfp",
+        help="dfp = anual; itr = trimestral",
+    )
     parser.add_argument(
         "--db",
         type=Path,
@@ -38,7 +46,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     database.initialize()
 
-    provider = CvmDfpProvider(consolidated=not args.individual)
+    consolidated = not args.individual
+    provider = (
+        CvmItrProvider(consolidated=consolidated)
+        if args.dataset == "itr"
+        else CvmDfpProvider(consolidated=consolidated)
+    )
     result = FundamentalsIngestion(
         provider=provider,
         repository=ObservationRepository(database),
@@ -47,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"{result.observations} novas observações e "
-        f"{result.issuers} novos emissores da CVM DFP {args.year}"
+        f"{result.issuers} novos emissores da CVM {args.dataset.upper()} {args.year}"
     )
     return 0
 

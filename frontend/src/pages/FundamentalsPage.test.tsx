@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/api", () => ({ getJson: vi.fn() }));
@@ -77,5 +77,35 @@ describe("FundamentalsPage", () => {
     render(<FundamentalsPage />);
 
     expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+
+  it("consulta o provider trimestral ao trocar a periodicidade", async () => {
+    stubApi();
+    const { container } = render(<FundamentalsPage />);
+    await screen.findByText(/Último valor/);
+
+    const selects = container.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "itr" } });
+
+    await waitFor(() => {
+      expect(vi.mocked(getJson)).toHaveBeenCalledWith(
+        expect.stringContaining("provider=cvm_itr"),
+      );
+    });
+  });
+
+  it("anexa _ytd ao marcar acumulado no ano", async () => {
+    stubApi();
+    const { container } = render(<FundamentalsPage />);
+    await screen.findByText(/Último valor/);
+
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "itr" } });
+    fireEvent.click(await screen.findByRole("checkbox"));
+
+    await waitFor(() => {
+      expect(vi.mocked(getJson)).toHaveBeenCalledWith(
+        expect.stringContaining("metric=revenue_ytd"),
+      );
+    });
   });
 });

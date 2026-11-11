@@ -78,12 +78,13 @@ Em produção o `deploy/compose.yaml` injeta a variável a partir do `.env` da V
 A ingestão de demonstrações financeiras usa os dados abertos da CVM (DFP) e grava observações com proveniência no SQLite:
 
 ```bash
-python -m jobs.ingest_cvm --year 2024
+python -m jobs.ingest_cvm --year 2024                  # anual (DFP)
+python -m jobs.ingest_cvm --year 2024 --dataset itr    # trimestral (ITR)
 # dentro do container em produção:
-docker exec dash-invest python -m jobs.ingest_cvm --year 2024
+docker exec dash-invest python -m jobs.ingest_cvm --year 2024 --dataset itr
 ```
 
-Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Os emissores (CNPJ → razão social/CD_CVM) são persistidos junto. Consulte pela página **Fundamentos** ou pelos endpoints `GET /api/data/issuers`, `GET /api/data/observations` e `GET /api/data/observations/series`.
+No ITR, o trimestre usa a métrica canônica (`revenue`) e o acumulado do ano recebe o sufixo `_ytd` (`revenue_ytd`), para não misturar as duas séries. Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Os emissores (CNPJ → razão social/CD_CVM) são persistidos junto. Consulte pela página **Fundamentos** (com seleção de periodicidade) ou pelos endpoints `GET /api/data/issuers`, `GET /api/data/observations` e `GET /api/data/observations/series`.
 
 ## Histórico local
 
