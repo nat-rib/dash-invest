@@ -34,15 +34,21 @@ CVM_STATEMENTS = ("DRE", "BPA", "BPP")
 
 # Mapeamento best-effort de contas padronizadas para métricas canônicas.
 # O código original sempre permanece em `raw_payload`.
+# Contas cujo significado muda entre o plano societário e o plano de
+# instituições financeiras (ex.: 2.03 é "Provisões" em bancos) são resolvidas
+# pela descrição, não pelo código.
 CANONICAL_METRICS: dict[tuple[str, str], str] = {
     ("DRE", "3.01"): "revenue",
     ("DRE", "3.03"): "gross_profit",
     ("DRE", "3.05"): "operating_income",
     ("DRE", "3.11"): "net_income",
     ("BPA", "1"): "total_assets",
-    ("BPA", "1.01"): "current_assets",
-    ("BPP", "2.01"): "current_liabilities",
-    ("BPP", "2.03"): "equity",
+}
+
+DESCRIPTION_METRICS: dict[str, str] = {
+    "ATIVO CIRCULANTE": "current_assets",
+    "PASSIVO CIRCULANTE": "current_liabilities",
+    "PATRIMONIO LIQUIDO CONSOLIDADO": "equity",
 }
 
 CVM_CURRENCIES = {"REAL": "BRL", "DOLAR": "USD", "EURO": "EUR"}
@@ -251,9 +257,13 @@ def iter_statement(
             else None
         )
         account = (row.get("CD_CONTA") or "").strip()
-        metric = CANONICAL_METRICS.get(
-            (statement, account), f"{metric_prefix}.{statement.lower()}.{account}"
-        )
+        metric = CANONICAL_METRICS.get((statement, account))
+        if metric is None and account.count(".") == 1:
+            metric = DESCRIPTION_METRICS.get(
+                _normalize_token(row.get("DS_CONTA", ""))
+            )
+        if metric is None:
+            metric = f"{metric_prefix}.{statement.lower()}.{account}"
         if (
             long_period_suffix
             and period_start is not None

@@ -23,6 +23,10 @@ BPA_HEADER = (
     "CNPJ_CIA;DT_REFER;VERSAO;DENOM_CIA;CD_CVM;GRUPO_DFP;MOEDA;ESCALA_MOEDA;"
     "ORDEM_EXERC;DT_FIM_EXERC;CD_CONTA;DS_CONTA;VL_CONTA;ST_CONTA_FIXA"
 )
+BPP_HEADER = (
+    "CNPJ_CIA;DT_REFER;VERSAO;DENOM_CIA;CD_CVM;GRUPO_DFP;MOEDA;ESCALA_MOEDA;"
+    "ORDEM_EXERC;DT_FIM_EXERC;CD_CONTA;DS_CONTA;VL_CONTA;ST_CONTA_FIXA"
+)
 INDEX_HEADER = (
     "CNPJ_CIA;DT_REFER;VERSAO;DENOM_CIA;CD_CVM;CATEG_DOC;ID_DOC;DT_RECEB;LINK_DOC"
 )
@@ -96,6 +100,36 @@ def test_parse_statement_anexa_documento_publicado():
     assert observations[0].source_document == "http://example/doc"
     assert observations[0].published_at is not None
     assert observations[0].published_at.isoformat() == "2025-02-19T00:00:00+00:00"
+
+
+def test_bpp_mapeia_patrimonio_no_plano_societario():
+    bpp = "\n".join(
+        [
+            BPP_HEADER,
+            f"{CNPJ};2024-12-31;1;{COMPANY};001023;DF Consolidado - Balanço Patrimonial Passivo;REAL;MIL;ÚLTIMO;2024-12-31;2.03;Patrimônio Líquido Consolidado;500.0000000000;S",
+        ]
+    )
+
+    observations = parse_statement(bpp, statement="BPP")
+
+    assert [item.metric for item in observations] == ["equity"]
+    assert observations[0].value == Decimal("500000.0000000000")
+
+
+def test_bpp_mapeia_patrimonio_no_plano_de_instituicao_financeira():
+    bpp = "\n".join(
+        [
+            BPP_HEADER,
+            f"{CNPJ};2024-12-31;1;{COMPANY};001023;DF Consolidado - Balanço Patrimonial Passivo;REAL;MIL;ÚLTIMO;2024-12-31;2.03;Provisões;225.0000000000;S",
+            f"{CNPJ};2024-12-31;1;{COMPANY};001023;DF Consolidado - Balanço Patrimonial Passivo;REAL;MIL;ÚLTIMO;2024-12-31;2.07;Patrimônio Líquido Consolidado;2567.0000000000;S",
+        ]
+    )
+
+    observations = parse_statement(bpp, statement="BPP")
+    metrics = {item.metric: item.value for item in observations}
+
+    assert metrics["equity"] == Decimal("2567000.0000000000")
+    assert metrics["cvm_dfp.bpp.2.03"] == Decimal("225000.0000000000")
 
 
 def test_parse_statement_respeita_escopo_consolidado():
