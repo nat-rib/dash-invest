@@ -44,7 +44,7 @@ Run local com a interface React servida pelo FastAPI:
 python -m uvicorn api.main:app --host 127.0.0.1 --port 8501
 ```
 
-A interface cobre todas as funcionalidades: Visão geral, Posições, Ledger, Rentabilidade, Análise e Detalhes, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
+A interface cobre todas as funcionalidades: Visão geral, Posições, Ledger, Portfolio Fit, Rentabilidade, Análise e Detalhes, Fundamentos, Risco, Screener, Pesquisa IA, Importar carteira, Histórico patrimonial, Cotações e Amortizar ou investir.
 
 ## Interface e fontes de dados
 
