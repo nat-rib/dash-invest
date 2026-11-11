@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -36,6 +37,14 @@ def _from_row(row: sqlite3.Row) -> Observation:
         source_document=row["source_document"],
         raw_payload=row["raw_payload"],
     )
+
+
+@dataclass(frozen=True)
+class SeriesKey:
+    provider: str
+    instrument_id: str | None
+    metric: str
+    observations: int
 
 
 class ObservationRepository:
@@ -207,3 +216,58 @@ class ObservationRepository:
 
         with self.database.connection() as connection:
             return [_from_row(row) for row in connection.execute(query, params)]
+
+    def series_keys(
+        self,
+        *,
+        provider: str | None = None,
+        metric: str | None = None,
+    ) -> list[SeriesKey]:
+        clauses = ["superseded_by IS NULL"]
+        params: list[object] = []
+        if provider is not None:
+            clauses.append("provider = ?")
+            params.append(provider)
+        if metric is not None:
+            clauses.append("metric = ?")
+            params.append(metric)
+
+        query = (
+            "SELECT provider, instrument_id, metric, COUNT(*) AS total FROM observations "
+            "WHERE " + " AND ".join(clauses) +
+            " GROUP BY provider, instrument_id, metric ORDER BY provider, metric, instrument_id"
+        )
+        with self.database.connection() as connection:
+            return [
+                SeriesKey(
+                    provider=row["provider"],
+                    instrument_id=row["instrument_id"],
+                    metric=row["metric"],
+                    observations=int(row["total"]),
+                )
+                for row in connection.execute(query, params)
+            ]
+
+    def latest_by_series(
+        self,
+        *,
+        provider: str,
+        metrics: Iterable[str],
+    ) -> list[Observation]:
+        """Última observação vigente por instrumento e métrica."""
+        wanted = list(dict.fromkeys(metrics))
+        if not wanted:
+            return []
+        placeholders = ",".join("?" for _ in wanted)
+        query = f"""
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY instrument_id, metric
+                    ORDER BY reference_date DESC, collected_at DESC, id DESC
+                ) AS rn
+                FROM observations
+                WHERE provider = ? AND metric IN ({placeholders}) AND superseded_by IS NULL
+            ) WHERE rn = 1
+        """
+        with self.database.connection() as connection:
+            return [_from_row(row) for row in connection.execute(query, [provider, *wanted])]

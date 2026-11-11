@@ -80,11 +80,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 **Estimativa:** 1 semana.
 
-- [ ] Retorno diário e mensal por instrumento e carteira.
-- [ ] Volatilidade, drawdown, beta, Sharpe e Sortino.
-- [ ] VaR/CVaR histórico e paramétrico.
-- [ ] Correlação e concentração por setor, moeda e classe.
-- [ ] Duration, sensibilidade a juros e indicadores de crédito para renda fixa.
+- [x] Retorno diário e mensal por instrumento e carteira.
+- [x] Volatilidade, drawdown, beta, Sharpe e Sortino.
+- [x] VaR/CVaR histórico e paramétrico.
+- [ ] Correlação e concentração por setor, moeda e classe. **Correlação entregue; concentração na Fase 6.**
+- [ ] Duration, sensibilidade a juros e indicadores de crédito para renda fixa. **Bloqueado por falta de fluxos de caixa no snapshot.**
+
+**Estado (10/11/2026):** motor de risco entregue em `src/analytics/risk.py`, com séries de preço persistidas como `Observation` (provider `csv` ou `alpha_vantage`) e importação por `jobs.ingest_prices`. Endpoints `GET /api/risk/instrument` e `GET /api/risk/portfolio`; página **Risco** no React. Amostra mínima de 20 retornos para métricas anualizadas; ausência não vira zero. Renda fixa permanece indisponível até existir fluxo de caixa detalhado.
 
 **Aceite:** testes com séries sintéticas conhecidas; frequência e moeda explícitas; amostra insuficiente retorna indisponível, não zero ou estimativa fabricada.
 

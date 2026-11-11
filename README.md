@@ -86,6 +86,17 @@ docker exec dash-invest python -m jobs.ingest_cvm --year 2024 --dataset itr
 
 No ITR, o trimestre usa a métrica canônica (`revenue`) e o acumulado do ano recebe o sufixo `_ytd` (`revenue_ytd`), para não misturar as duas séries. Cada linha guarda provedor, CNPJ do emissor, métrica, período, data de publicação, link do documento e o payload bruto. Reingestões são idempotentes e reapresentações marcam a versão anterior como substituída, sem apagar histórico. Os emissores (CNPJ → razão social/CD_CVM) são persistidos junto. Consulte pela página **Fundamentos** (com seleção de periodicidade) ou pelos endpoints `GET /api/data/issuers`, `GET /api/data/observations` e `GET /api/data/observations/series`.
 
+## Preços e risco
+
+Importe séries diárias de fechamento para calcular risco:
+
+```bash
+python -m jobs.ingest_prices --symbol PETR4.SAO --csv precos.csv
+python -m jobs.ingest_prices --symbol PETR4.SAO --start 2024-01-01   # Alpha Vantage
+```
+
+O CSV aceita `date,close` ou `Data;Fechamento`. A página **Risco** mostra retorno total e mensal, volatilidade anualizada, drawdown, Sharpe, Sortino, VaR/CVaR (histórico e paramétrico) e beta/correlação quando há benchmark. O risco da carteira usa o histórico de snapshots; amostra insuficiente fica explicitamente indisponível.
+
 ## Histórico local
 
 Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/portfolio_history.db`, um banco SQLite local ignorado pelo Git. A página **Histórico** mostra a evolução dos valores e das posições. Ela não calcula retorno TWR, XIRR ou rentabilidade total: para isso também é necessário registrar cada aporte, retirada, imposto e provento.

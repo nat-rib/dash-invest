@@ -13,6 +13,8 @@ from api.schemas.observations import (
     ObservationOut,
     ObservationSeriesOut,
     ObservationSeriesPoint,
+    SeriesKeyListOut,
+    SeriesKeyOut,
 )
 
 router = APIRouter(prefix="/api", tags=["data"])
@@ -48,6 +50,26 @@ def list_observations(
     return ObservationListOut(
         items=[ObservationOut.model_validate(item) for item in items],
         total=total,
+    )
+
+
+@router.get("/data/series", response_model=SeriesKeyListOut)
+def list_series(
+    repositories: Repositories,
+    provider: str | None = Query(default=None),
+    metric: str | None = Query(default=None),
+) -> SeriesKeyListOut:
+    keys = repositories.observations.series_keys(provider=provider, metric=metric)
+    return SeriesKeyListOut(
+        items=[
+            SeriesKeyOut(
+                provider=key.provider,
+                instrument_id=key.instrument_id,
+                metric=key.metric,
+                observations=key.observations,
+            )
+            for key in keys
+        ]
     )
 
 

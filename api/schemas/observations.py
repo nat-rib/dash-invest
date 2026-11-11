@@ -44,3 +44,14 @@ class ObservationSeriesOut(BaseModel):
     instrument_id: str | None = None
     metric: str
     points: list[ObservationSeriesPoint]
+
+
+class SeriesKeyOut(BaseModel):
+    provider: str
+    instrument_id: str | None = None
+    metric: str
+    observations: int
+
+
+class SeriesKeyListOut(BaseModel):
+    items: list[SeriesKeyOut]
