@@ -23,9 +23,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    database = SQLiteDatabase(
+    database_path = Path(
         args.db or os.environ.get("DASH_INVEST_DB_PATH", "data/dash_invest.db")
-    )
+    ).resolve()
+    # O container tem /tmp de 64 MB; temporários do SQLite vão para o volume.
+    os.environ.setdefault("SQLITE_TMPDIR", str(database_path.parent))
+
+    database = SQLiteDatabase(database_path)
     database.initialize()
     updated = ObservationRepository(database).repair_supersession()
     print(f"{updated} observações duplicadas marcadas como superseded")

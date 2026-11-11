@@ -138,44 +138,51 @@ class ObservationRepository:
     def repair_supersession(self) -> int:
         """Marca duplicatas legadas mantendo a versão mais recente por slot.
 
-        Correções do parser que não geraram uma nova ingestão podem deixar mais
-        de uma linha ativa no mesmo slot. Este reparo é idempotente.
+        Processa uma série por vez para não criar arquivos temporários grandes
+        (o container tem /tmp de 64 MB). Correções do parser podem deixar mais
+        de uma linha ativa no mesmo slot sem nova ingestão. O reparo é
+        idempotente.
         """
+        updated = 0
         with self.database.transaction() as connection:
-            rows = connection.execute(
-                """SELECT id, provider, metric, instrument_id, reference_date,
-                          period_start, period_end, published_at, collected_at
+            connection.execute("PRAGMA temp_store = MEMORY")
+            series = connection.execute(
+                """SELECT DISTINCT provider, instrument_id, metric
                    FROM observations
                    WHERE superseded_by IS NULL
-                   ORDER BY provider, metric, instrument_id, reference_date,
-                            COALESCE(period_start, ''), COALESCE(period_end, ''),
-                            COALESCE(published_at, ''), collected_at, id"""
+                   ORDER BY provider, instrument_id, metric"""
             ).fetchall()
 
-            groups: dict[tuple[object, ...], list[int]] = {}
-            for row in rows:
-                key = (
-                    row["provider"],
-                    row["metric"],
-                    row["instrument_id"],
-                    row["reference_date"],
-                    row["period_start"],
-                    row["period_end"],
-                )
-                groups.setdefault(key, []).append(int(row["id"]))
+            for item in series:
+                rows = connection.execute(
+                    """SELECT id, reference_date, period_start, period_end
+                       FROM observations
+                       WHERE provider = ? AND instrument_id IS ? AND metric = ?
+                         AND superseded_by IS NULL
+                       ORDER BY reference_date,
+                                COALESCE(period_start, ''),
+                                COALESCE(period_end, ''),
+                                COALESCE(published_at, ''),
+                                collected_at, id""",
+                    (item["provider"], item["instrument_id"], item["metric"]),
+                ).fetchall()
 
-            updated = 0
-            for ids in groups.values():
-                if len(ids) < 2:
-                    continue
-                newest = ids[-1]
-                for previous in ids[:-1]:
-                    connection.execute(
-                        "UPDATE observations SET superseded_by = ? "
-                        "WHERE id = ? AND superseded_by IS NULL",
-                        (newest, previous),
-                    )
-                    updated += 1
+                groups: dict[tuple[object, ...], list[int]] = {}
+                for row in rows:
+                    key = (row["reference_date"], row["period_start"], row["period_end"])
+                    groups.setdefault(key, []).append(int(row["id"]))
+
+                for ids in groups.values():
+                    if len(ids) < 2:
+                        continue
+                    newest = ids[-1]
+                    for previous in ids[:-1]:
+                        connection.execute(
+                            "UPDATE observations SET superseded_by = ? "
+                            "WHERE id = ? AND superseded_by IS NULL",
+                            (newest, previous),
+                        )
+                        updated += 1
             return updated
 
     def get(self, observation_id: int) -> Observation | None:
