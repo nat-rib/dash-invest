@@ -54,6 +54,15 @@ cd "$APP_DIR"
 docker compose pull
 docker compose up -d --remove-orphans
 
+# Timer diário de cotações (systemd do host). Idempotente.
+if command -v systemctl >/dev/null 2>&1 && [[ -d /etc/systemd/system ]]; then
+  sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-prices.service" /etc/systemd/system/
+  sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-prices.timer" /etc/systemd/system/
+  sudo -n systemctl daemon-reload
+  sudo -n systemctl enable --now dash-invest-prices.timer
+  echo "Timer diário de cotações habilitado (06:15, America/Sao_Paulo)."
+fi
+
 echo
 echo "Deploy concluído. Verifique com:"
 echo "  docker compose -f $APP_DIR/compose.yaml ps"

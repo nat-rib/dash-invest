@@ -1,0 +1,11 @@
+[Unit]
+Description=Agenda diária de cotações do Dash-Invest
+
+[Timer]
+OnCalendar=*-*-* 06:15:00
+Persistent=true
+RandomizedDelaySec=600
+Unit=dash-invest-prices.service
+
+[Install]
+WantedBy=timers.target

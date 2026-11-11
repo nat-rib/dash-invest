@@ -97,6 +97,8 @@ python -m jobs.ingest_prices --symbol PETR4.SAO --start 2024-01-01   # Alpha Van
 
 O CSV aceita `date,close` ou `Data;Fechamento`. A página **Risco** mostra retorno total e mensal, volatilidade anualizada, drawdown, Sharpe, Sortino, VaR/CVaR (histórico e paramétrico) e beta/correlação quando há benchmark. O risco da carteira usa o histórico de snapshots; amostra insuficiente fica explicitamente indisponível.
 
+Na VPS, o timer `dash-invest-prices.timer` atualiza as cotações das posições todos os dias às 06:15 (America/Sao_Paulo). Para rodar agora: `sudo systemctl start dash-invest-prices.service`.
+
 ## Screener e valuation
 
 A página **Screener** cruza as últimas demonstrações anuais da CVM com filtros de ROE, ROA e margem líquida, além de uma calculadora DCF com premissas explícitas. As razões ficam indisponíveis quando falta numerador ou denominador; nada é substituído por zero. Múltiplos de mercado dependem de preço e ações em circulação, ainda não ingeridos.
