@@ -105,6 +105,20 @@ A página **Screener** cruza as últimas demonstrações anuais da CVM com filtr
 
 A página **Portfolio Fit** mostra exposição por classe, instituição e moeda, concentração (HHI), maiores posições, cobertura de liquidez/crédito e correlação entre posições que tenham série de preços. Look-through de ETFs, setor e duration de renda fixa são reportados como indisponíveis quando faltam dados.
 
+## Pesquisa assistida por IA
+
+A página **Pesquisa IA** gera um relatório a partir dos fundamentos anuais da CVM. Cada afirmação carrega valor, exercício e link do documento; a narrativa é apenas redação. Sem gateway configurado, o texto é determinístico e nenhum serviço externo é chamado.
+
+Para usar um LLM compatível com OpenAI, defina no `.env` (local ou da VPS):
+
+```bash
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=...
+AI_MODEL=gpt-4o-mini
+```
+
+O prompt envia somente os fatos calculados, nunca a carteira completa.
+
 ## Histórico local
 
 Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/portfolio_history.db`, um banco SQLite local ignorado pelo Git. A página **Histórico** mostra a evolução dos valores e das posições. Ela não calcula retorno TWR, XIRR ou rentabilidade total: para isso também é necessário registrar cada aporte, retirada, imposto e provento.

@@ -122,11 +122,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 **Estimativa:** 1–2 semanas.
 
-- [ ] LLM Gateway independente de provedor.
-- [ ] Retrieval de documentos oficiais com FTS5 inicialmente.
-- [ ] Research Agent com fluxo dados → documentos → cálculos → interpretação.
-- [ ] Relatórios com claims, evidências, URLs, datas e limitações.
-- [ ] Controles de custo, cache, timeouts, retries e privacidade.
+- [x] LLM Gateway independente de provedor.
+- [ ] Retrieval de documentos oficiais com FTS5 inicialmente. **Pendente; o relatório cita os links oficiais.**
+- [x] Research Agent com fluxo dados → documentos → cálculos → interpretação.
+- [x] Relatórios com claims, evidências, URLs, datas e limitações.
+- [ ] Controles de custo, cache, timeouts, retries e privacidade. **Timeout e privacidade entregues; cache/retries pendentes.**
+
+**Estado (10/11/2026):** `src/ai/gateway.py` abstrai provedor compatível com OpenAI via `AI_BASE_URL`/`AI_API_KEY`/`AI_MODEL`; sem chave, nada é chamado. `src/ai/research.py` monta claims determinísticos (receita, lucro, patrimônio, ativo, margem, ROE, crescimento) com fonte e exercício e usa o LLM apenas para redigir, com fallback determinístico. `GET /api/research/{cnpj}` e página **Pesquisa IA**. Base textual/FTS5 e cache ficam pendentes.
 
 **Aceite:** afirmações factuais relevantes têm evidência; IA não calcula indicadores nem inventa valores; admite falta de dados; carteira privada não é enviada integralmente.
 
