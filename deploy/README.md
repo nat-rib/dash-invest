@@ -94,5 +94,29 @@ A partir daí, o deploy é automático ao integrar alterações em `main`. Para 
 ```bash
 docker compose -f /opt/personal-cloud/apps/dash-invest/compose.yaml ps
 docker logs --tail=100 dash-invest
-curl -fsS http://127.0.0.1:8501/_stcore/health
+curl -fsS http://127.0.0.1:8501/api/health
 ```
+
+## 7. Atualização diária de cotações
+
+O timer systemd `dash-invest-prices.timer` executa todos os dias às **06:15** (America/Sao_Paulo) o job `jobs.ingest_prices_daily` dentro do container. Ele lê os tickers de `portfolio.json`, consulta o Alpha Vantage e grava as observações de fechamento (`metric=close`). O job é idempotente, ignora cripto e processa até 20 símbolos por execução (cota gratuita de ~25 req/dia). Símbolos excedentes ficam registrados no log.
+
+O `install.sh` instala e habilita o timer no primeiro deploy. Em uma VPS já existente, instale manualmente:
+
+```bash
+cd /home/deploy/dash-invest
+sudo install -m 644 deploy/systemd/dash-invest-prices.service /etc/systemd/system/
+sudo install -m 644 deploy/systemd/dash-invest-prices.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now dash-invest-prices.timer
+```
+
+Verificar e testar:
+
+```bash
+systemctl list-timers dash-invest-prices.timer
+journalctl -u dash-invest-prices.service -n 50 --no-pager
+sudo systemctl start dash-invest-prices.service   # executa agora
+```
+
+O timer usa o timezone do host (`timedatectl`). Se o host não estiver em `America/Sao_Paulo`, ajuste o `OnCalendar` ou o timezone da VPS.

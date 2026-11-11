@@ -1,0 +1,16 @@
+[Unit]
+Description=Atualiza cotações diárias do Dash-Invest
+Documentation=https://github.com/nat-rib/dash-invest
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/personal-cloud/apps/dash-invest
+# Só executa quando o container estiver em execução.
+ExecCondition=/bin/sh -c 'test "$(docker inspect -f "{{.State.Running}}" dash-invest 2>/dev/null)" = true'
+ExecStart=/usr/bin/docker exec dash-invest python -m jobs.ingest_prices_daily --max-symbols 20
+TimeoutStartSec=15min
+Nice=10

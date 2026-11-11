@@ -26,8 +26,10 @@ class AlphaVantageProvider:
         symbol: str,
         start: date | None = None,
         end: date | None = None,
+        currency: str | None = None,
     ) -> Iterator[Observation]:
         frame = AlphaVantageClient(self.api_key).daily_history(symbol)
+        chosen_currency = currency or self.currency
         source = (
             "https://www.alphavantage.co/query"
             f"?function=TIME_SERIES_DAILY&symbol={quote(symbol)}"
@@ -43,7 +45,7 @@ class AlphaVantageProvider:
                 metric="close",
                 instrument_id=symbol,
                 value=Decimal(str(row["Fechamento"])),
-                currency=self.currency,
+                currency=chosen_currency,
                 period_end=day,
                 reference_date=day,
                 parser_version=PARSER_VERSION,
