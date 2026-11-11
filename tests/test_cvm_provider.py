@@ -6,7 +6,7 @@ import pytest
 
 from src.domain.observations import QualityStatus
 from src.providers.cvm import (
-    CvmDfpArchive,
+    CvmArchive,
     CvmDfpProvider,
     CvmParseError,
     dfp_url,
@@ -117,7 +117,7 @@ def test_archive_le_membro_latin1():
     with zipfile.ZipFile(buffer, "w") as archive:
         archive.writestr("amostra.csv", dre_csv().encode("iso-8859-1"))
 
-    text = CvmDfpArchive(buffer.getvalue()).read_text("amostra.csv")
+    text = CvmArchive(buffer.getvalue()).read_text("amostra.csv")
 
     assert "ÚLTIMO" in text
     assert "Receita" in text
