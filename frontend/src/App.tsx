@@ -11,6 +11,7 @@ import LedgerPage from "./pages/LedgerPage";
 import MercadoPage from "./pages/MercadoPage";
 import PerformancePage from "./pages/PerformancePage";
 import RiskPage from "./pages/RiskPage";
+import ScreenerPage from "./pages/ScreenerPage";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="analysis" element={<AnalysisPage />} />
         <Route path="fundamentos" element={<FundamentalsPage />} />
         <Route path="risco" element={<RiskPage />} />
+        <Route path="screener" element={<ScreenerPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />
         <Route path="amortizacao" element={<AmortizacaoPage />} />

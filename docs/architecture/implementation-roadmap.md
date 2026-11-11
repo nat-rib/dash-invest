@@ -94,11 +94,13 @@ Roadmap incremental e orientado a entregas verificáveis. Estimativas representa
 
 **Estimativa:** 2 semanas.
 
-- [ ] Screener inicial de ações brasileiras.
-- [ ] Indicadores fundamentalistas e comparação setorial.
-- [ ] Valuation DCF e múltiplos com premissas visíveis.
+- [x] Screener inicial de ações brasileiras.
+- [ ] Indicadores fundamentalistas e comparação setorial. **Indicadores entregues; comparação setorial depende de dados de setor.**
+- [ ] Valuation DCF e múltiplos com premissas visíveis. **DCF entregue; múltiplos dependem de preço e ações em circulação.**
 - [ ] Cenários pessimista/base/otimista e análise de sensibilidade.
-- [ ] Explicação dos filtros e qualidade/cobertura dos dados.
+- [x] Explicação dos filtros e qualidade/cobertura dos dados.
+
+**Estado (10/11/2026):** screener em `src/analytics/screener.py` sobre as últimas observações anuais da CVM, com ROE, ROA, margem líquida e giro do ativo; razões só existem quando o denominador é positivo. API `GET /api/screener`. DCF em `src/analytics/valuation.py` e `POST /api/valuation/dcf`, com premissas explícitas e valor terminal de Gordon. Página **Screener** no React com filtros, tabela e calculadora DCF. Múltiplos e cenários ficam para quando houver preço/ações em circulação.
 
 **Aceite:** resultados reproduzíveis; nenhuma recomendação baseada em dado ausente; preço-alvo acompanhado de premissas e cenários.
 
