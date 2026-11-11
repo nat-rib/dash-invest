@@ -101,6 +101,10 @@ O CSV aceita `date,close` ou `Data;Fechamento`. A página **Risco** mostra retor
 
 A página **Screener** cruza as últimas demonstrações anuais da CVM com filtros de ROE, ROA e margem líquida, além de uma calculadora DCF com premissas explícitas. As razões ficam indisponíveis quando falta numerador ou denominador; nada é substituído por zero. Múltiplos de mercado dependem de preço e ações em circulação, ainda não ingeridos.
 
+## Portfolio Fit
+
+A página **Portfolio Fit** mostra exposição por classe, instituição e moeda, concentração (HHI), maiores posições, cobertura de liquidez/crédito e correlação entre posições que tenham série de preços. Look-through de ETFs, setor e duration de renda fixa são reportados como indisponíveis quando faltam dados.
+
 ## Histórico local
 
 Cada consulta bem-sucedida na página **Mercado** registra um snapshot em `data/portfolio_history.db`, um banco SQLite local ignorado pelo Git. A página **Histórico** mostra a evolução dos valores e das posições. Ela não calcula retorno TWR, XIRR ou rentabilidade total: para isso também é necessário registrar cada aporte, retirada, imposto e provento.

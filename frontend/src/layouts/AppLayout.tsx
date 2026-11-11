@@ -11,6 +11,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/carteira", label: "Posições", icon: "💼" },
       { to: "/ledger", label: "Ledger e operações", icon: "🔄" },
+      { to: "/fit", label: "Portfolio Fit", icon: "🧩" },
       { to: "/performance", label: "Rentabilidade", icon: "📈" },
     ],
   },
