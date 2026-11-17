@@ -1673,3 +1673,13 @@ tr.selected-row td {
   margin: 4px 0 0 18px;
   padding: 0;
 }
+
+.radar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.radar-actions a.button {
+  text-decoration: none;
+}

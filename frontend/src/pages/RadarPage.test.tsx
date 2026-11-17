@@ -1,9 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../services/api", () => ({ getJson: vi.fn() }));
+vi.mock("../services/api", () => ({
+  getJson: vi.fn(),
+  sendJson: vi.fn(),
+  deleteJson: vi.fn(),
+}));
 
-import { getJson } from "../services/api";
+import { deleteJson, getJson, sendJson } from "../services/api";
 import RadarPage from "./RadarPage";
 
 const candidates = {
@@ -27,6 +31,9 @@ const candidates = {
       sources: ["InfoMoney"],
       signal_count: 2,
       last_seen: "2026-11-16T12:00:00Z",
+      cnpj: null,
+      price_provider: null,
+      price_instrument: null,
     },
     {
       key: "ticker:PETR4",
@@ -47,6 +54,9 @@ const candidates = {
       sources: ["Exame"],
       signal_count: 1,
       last_seen: "2026-11-16T11:00:00Z",
+      cnpj: "33000167000101",
+      price_provider: "alpha_vantage",
+      price_instrument: "PETR4.SAO",
     },
   ],
   total: 2,
@@ -55,7 +65,16 @@ const candidates = {
 describe("RadarPage", () => {
   beforeEach(() => {
     vi.mocked(getJson).mockReset();
-    vi.mocked(getJson).mockResolvedValue(candidates as never);
+    vi.mocked(getJson).mockImplementation((url: string) => {
+      if (url.startsWith("/api/watchlist")) {
+        return Promise.resolve({ items: [], total: 0 } as never);
+      }
+      return Promise.resolve(candidates as never);
+    });
+    vi.mocked(sendJson).mockReset();
+    vi.mocked(sendJson).mockResolvedValue({} as never);
+    vi.mocked(deleteJson).mockReset();
+    vi.mocked(deleteJson).mockResolvedValue(undefined as never);
   });
 
   it("lista os ativos ordenados e abre detalhes", async () => {
@@ -88,5 +107,29 @@ describe("RadarPage", () => {
     render(<RadarPage />);
 
     expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+
+  it("abre Fundamentos/Risco e permite seguir o ativo", async () => {
+    render(<RadarPage />);
+    await screen.findAllByText("Petrobras PN");
+
+    const fundamentos = screen.getByRole("link", { name: "Fundamentos" });
+    expect(fundamentos.getAttribute("href")).toBe("/fundamentos?cnpj=33000167000101");
+
+    const risco = screen.getByRole("link", { name: "Risco" });
+    expect(risco.getAttribute("href")).toContain("provider=alpha_vantage");
+    expect(risco.getAttribute("href")).toContain("instrument=PETR4.SAO");
+
+    const follow = screen.getAllByRole("button", { name: "Seguir" }).at(-1);
+    expect(follow).toBeTruthy();
+    fireEvent.click(follow as HTMLButtonElement);
+
+    await waitFor(() =>
+      expect(vi.mocked(sendJson)).toHaveBeenCalledWith(
+        "/api/watchlist",
+        "POST",
+        expect.objectContaining({ asset_key: "ticker:PETR4" }),
+      ),
+    );
   });
 });

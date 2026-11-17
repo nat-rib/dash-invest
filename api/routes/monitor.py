@@ -61,6 +61,9 @@ def monitor_candidates(
                 sources=list(item.sources),
                 signal_count=item.signal_count,
                 last_seen=item.last_seen,
+                cnpj=item.cnpj,
+                price_provider=item.price_provider,
+                price_instrument=item.price_instrument,
             )
             for item in items
         ],

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card, EmptyState, ErrorBox, Loading, SelectInput } from "../components/ui";
 import type { Candidate } from "../services/monitor";
 import { fetchCandidates } from "../services/monitor";
+import { addWatchlist, fetchWatchlist, removeWatchlist } from "../services/watchlist";
 
 const CLASS_LABELS: Record<string, string> = {
   renda_fixa: "Renda fixa",
@@ -43,19 +44,43 @@ export default function RadarPage() {
   const [minScore, setMinScore] = useState("");
   const [sortBy, setSortBy] = useState("score");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [watching, setWatching] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
     setError(null);
-    fetchCandidates({ limit: 200 })
-      .then((data) => setCandidates(data.items))
+    Promise.all([fetchCandidates({ limit: 200 }), fetchWatchlist()])
+      .then(([data, watchlist]) => {
+        setCandidates(data.items);
+        setWatching(new Set(watchlist.items.map((item) => item.asset_key)));
+      })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
+
+  const toggleWatch = (item: Candidate) => {
+    const action = watching.has(item.key)
+      ? removeWatchlist(item.key)
+      : addWatchlist({
+          asset_key: item.key,
+          name: item.name,
+          asset_class: item.asset_class,
+        });
+    action
+      .then(() =>
+        setWatching((current) => {
+          const next = new Set(current);
+          if (next.has(item.key)) next.delete(item.key);
+          else next.add(item.key);
+          return next;
+        }),
+      )
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+  };
 
   const items = useMemo(() => {
     const minimum = Number(minScore.replace(",", ".")) || 0;
@@ -170,9 +195,30 @@ export default function RadarPage() {
                   <span>confiança {(item.confidence * 100).toFixed(0)}%</span>
                   <span>{item.last_seen ? formatDate(item.last_seen) : "—"}</span>
                 </div>
-                <Button variant="ghost" onClick={() => toggle(item.key)}>
-                  {isExpanded ? "Ocultar detalhes" : "Detalhes"}
-                </Button>
+                <div className="radar-actions">
+                  {item.cnpj && (
+                    <a className="button ghost" href={`/fundamentos?cnpj=${item.cnpj}`}>
+                      Fundamentos
+                    </a>
+                  )}
+                  {item.price_provider && item.price_instrument && (
+                    <a
+                      className="button ghost"
+                      href={`/risco?provider=${encodeURIComponent(item.price_provider)}&instrument=${encodeURIComponent(item.price_instrument)}`}
+                    >
+                      Risco
+                    </a>
+                  )}
+                  <Button
+                    variant={watching.has(item.key) ? "primary" : "ghost"}
+                    onClick={() => toggleWatch(item)}
+                  >
+                    {watching.has(item.key) ? "Seguindo" : "Seguir"}
+                  </Button>
+                  <Button variant="ghost" onClick={() => toggle(item.key)}>
+                    {isExpanded ? "Ocultar detalhes" : "Detalhes"}
+                  </Button>
+                </div>
                 {isExpanded && (
                   <div className="radar-detail">
                     <div>

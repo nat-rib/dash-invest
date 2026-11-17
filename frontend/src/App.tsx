@@ -16,6 +16,7 @@ import RadarPage from "./pages/RadarPage";
 import ResearchPage from "./pages/ResearchPage";
 import RiskPage from "./pages/RiskPage";
 import ScreenerPage from "./pages/ScreenerPage";
+import WatchlistPage from "./pages/WatchlistPage";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="pesquisa" element={<ResearchPage />} />
         <Route path="monitor" element={<MonitorPage />} />
         <Route path="radar" element={<RadarPage />} />
+        <Route path="watchlist" element={<WatchlistPage />} />
         <Route path="fit" element={<FitPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />

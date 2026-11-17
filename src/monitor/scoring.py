@@ -79,6 +79,9 @@ class Candidate:
     sources: tuple[str, ...] = ()
     signal_count: int = 0
     last_seen: datetime | None = None
+    cnpj: str | None = None
+    price_provider: str | None = None
+    price_instrument: str | None = None
 
 
 def aggregate_signals(
@@ -306,6 +309,7 @@ def rank_candidates(
                 sources=aggregate.sources,
                 signal_count=aggregate.signal_count,
                 last_seen=aggregate.last_seen,
+                cnpj=aggregate.cnpj,
             )
         )
 

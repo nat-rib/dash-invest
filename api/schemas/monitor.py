@@ -26,6 +26,9 @@ class CandidateOut(BaseModel):
     sources: list[str]
     signal_count: int
     last_seen: datetime | None = None
+    cnpj: str | None = None
+    price_provider: str | None = None
+    price_instrument: str | None = None
 
 
 class CandidateListOut(BaseModel):

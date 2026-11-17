@@ -17,6 +17,7 @@ from src.persistence.repositories import (
     PerformancePeriodRepository, TransactionRepository, TransferLinkRepository,
 )
 from src.persistence.signals import SignalRepository
+from src.persistence.watchlist import WatchlistRepository
 from src.persistence.snapshot_import import PortfolioSnapshotImporter
 
 from api.config import database_path
@@ -43,6 +44,7 @@ class Repositories:
         self.signals = SignalRepository(database)
         self.snapshots = SnapshotRepository(database)
         self.alerts = AlertRepository(database)
+        self.watchlist = WatchlistRepository(database)
         self.snapshot_importer = PortfolioSnapshotImporter(database)
 
     def transactions_importer(self) -> CanonicalTransactionCsvImporter:

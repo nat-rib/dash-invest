@@ -25,6 +25,7 @@ const NAV_GROUPS = [
       { to: "/pesquisa", label: "Pesquisa IA", icon: "🤖" },
       { to: "/monitor", label: "Monitor", icon: "📡" },
       { to: "/radar", label: "Radar", icon: "🎯" },
+      { to: "/watchlist", label: "Watchlist", icon: "⭐" },
       { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
     ],
   },
