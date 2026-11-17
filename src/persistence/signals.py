@@ -36,12 +36,56 @@ class SignalRepository:
         with self.database.transaction() as connection:
             return self._insert(connection, signal)
 
-    def record_many(self, signals: Iterable[Signal]) -> int:
+    def record_many(self, signals: Iterable[Signal], *, refresh: bool = False) -> int:
+        if refresh:
+            items = list(signals)
+            with self.database.transaction() as connection:
+                for signal in items:
+                    self._upsert(connection, signal)
+            return len(items)
+
         inserted = 0
         with self.database.transaction() as connection:
             for signal in signals:
                 inserted += int(self._insert(connection, signal))
         return inserted
+
+    @staticmethod
+    def _params(signal: Signal) -> tuple[object, ...]:
+        return (
+            signal.source,
+            signal.source_type,
+            signal.title,
+            signal.url,
+            signal.summary,
+            signal.published_at.isoformat() if signal.published_at else None,
+            signal.collected_at.isoformat(),
+            signal.content_hash,
+            json.dumps(
+                [asset.model_dump() for asset in signal.assets],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            signal.raw,
+        )
+
+    def _upsert(self, connection: sqlite3.Connection, signal: Signal) -> None:
+        connection.execute(
+            """INSERT INTO signals (
+                source, source_type, title, url, summary, published_at,
+                collected_at, content_hash, assets_json, raw
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source, url) DO UPDATE SET
+                source_type = excluded.source_type,
+                title = excluded.title,
+                summary = excluded.summary,
+                published_at = excluded.published_at,
+                collected_at = excluded.collected_at,
+                content_hash = excluded.content_hash,
+                assets_json = excluded.assets_json,
+                raw = excluded.raw""",
+            self._params(signal),
+        )
 
     def _insert(self, connection: sqlite3.Connection, signal: Signal) -> bool:
         cursor = connection.execute(
@@ -49,22 +93,7 @@ class SignalRepository:
                 source, source_type, title, url, summary, published_at,
                 collected_at, content_hash, assets_json, raw
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                signal.source,
-                signal.source_type,
-                signal.title,
-                signal.url,
-                signal.summary,
-                signal.published_at.isoformat() if signal.published_at else None,
-                signal.collected_at.isoformat(),
-                signal.content_hash,
-                json.dumps(
-                    [asset.model_dump() for asset in signal.assets],
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
-                signal.raw,
-            ),
+            self._params(signal),
         )
         return bool(cursor.rowcount)
 

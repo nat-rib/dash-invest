@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from src.domain.signals import AssetMention, Signal
 from src.monitor.collector import collect
 from src.monitor.config import MonitorConfig, Source
 from src.persistence.database import SQLiteDatabase
@@ -88,3 +89,34 @@ def test_hint_de_cdb_na_fonte_extrai_banco(tmp_path):
     assets = {asset.key for item in repository.list() for asset in item.assets}
     assert "fixed_income:cdb:nubank" in assets
     assert "fixed_income:cdb:inter" in assets
+
+
+def test_refresh_atualiza_assets_de_sinal_existente(tmp_path):
+    database = SQLiteDatabase(tmp_path / "signals.db")
+    database.initialize()
+    repository = SignalRepository(database)
+    original = Signal(
+        source="Fonte",
+        title="Notícia",
+        url="https://example/1",
+        collected_at=NOW,
+        assets=(AssetMention(key="old", name="Old", asset_class="outros", confidence=0.5),),
+    )
+    repository.record_many([original])
+
+    updated = original.model_copy(
+        update={
+            "assets": (
+                AssetMention(
+                    key="fixed_income:cdb:nubank",
+                    name="CDB Nubank",
+                    asset_class="renda_fixa",
+                    confidence=0.8,
+                ),
+            )
+        }
+    )
+    assert repository.record_many([updated], refresh=True) == 1
+
+    stored = repository.list()[0]
+    assert stored.assets[0].key == "fixed_income:cdb:nubank"

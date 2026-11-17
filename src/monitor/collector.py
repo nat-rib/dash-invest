@@ -31,6 +31,7 @@ def collect(
     fetcher: Callable[[str], bytes] = fetch_feed,
     now: datetime | None = None,
     sleep: float = 0.3,
+    refresh: bool = False,
 ) -> CollectionSummary:
     collected_at = now or datetime.now(timezone.utc)
     signals: list[Signal] = []
@@ -71,7 +72,7 @@ def collect(
         if sleep > 0 and len(config.sources) > 1:
             time.sleep(sleep)
 
-    inserted = repository.record_many(signals)
+    inserted = repository.record_many(signals, refresh=refresh)
     return CollectionSummary(
         sources_ok=sources_ok,
         sources_failed=sources_failed,
