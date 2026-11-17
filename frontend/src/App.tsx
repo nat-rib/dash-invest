@@ -12,6 +12,7 @@ import LedgerPage from "./pages/LedgerPage";
 import MercadoPage from "./pages/MercadoPage";
 import MonitorPage from "./pages/MonitorPage";
 import PerformancePage from "./pages/PerformancePage";
+import RadarPage from "./pages/RadarPage";
 import ResearchPage from "./pages/ResearchPage";
 import RiskPage from "./pages/RiskPage";
 import ScreenerPage from "./pages/ScreenerPage";
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="screener" element={<ScreenerPage />} />
         <Route path="pesquisa" element={<ResearchPage />} />
         <Route path="monitor" element={<MonitorPage />} />
+        <Route path="radar" element={<RadarPage />} />
         <Route path="fit" element={<FitPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />
