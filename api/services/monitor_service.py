@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from api.config import portfolio_path
 from src.analytics.risk import PricePoint, calculate_risk
 from src.importer import load_snapshot
+from src.monitor.backtest import BacktestReport, evaluate
 from src.monitor.config import MonitorConfig, load_config
 from src.monitor.scoring import (
     CLASS_BUCKETS,
@@ -17,6 +18,7 @@ from src.monitor.scoring import (
     fundamentals_from_observations,
     rank_candidates,
 )
+from src.persistence.monitor import CandidateSnapshot
 from src.portfolio import positions_frame
 
 
@@ -147,4 +149,98 @@ def signals(
         since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
     return repositories.signals.list(
         since=since, source=source, with_assets=with_assets, limit=limit
+    )
+
+
+def reference_prices(
+    repositories: Any, keys: list[str], as_of: date
+) -> dict[str, dict[str, object]]:
+    available = {
+        series.instrument_id: series
+        for series in repositories.observations.series_keys(metric="close")
+        if series.instrument_id
+    }
+    result: dict[str, dict[str, object]] = {}
+    for key in keys:
+        if not key.startswith("ticker:"):
+            continue
+        ticker = key.split(":", 1)[1]
+        series = available.get(ticker) or available.get(f"{ticker}.SAO")
+        if series is None:
+            continue
+        observations = repositories.observations.list(
+            provider=series.provider, instrument_id=series.instrument_id, metric="close"
+        )
+        usable = [item for item in observations if item.reference_date <= as_of]
+        if not usable:
+            continue
+        last = usable[-1]
+        result[key] = {
+            "price": float(last.value),
+            "date": last.reference_date,
+            "provider": series.provider,
+            "instrument": series.instrument_id,
+        }
+    return result
+
+
+def record_candidates_snapshot(
+    repositories: Any,
+    candidates: list[Candidate],
+    *,
+    snapshot_date: date,
+    now: datetime,
+) -> int:
+    prices = reference_prices(repositories, [item.key for item in candidates], snapshot_date)
+    snapshots: list[CandidateSnapshot] = []
+    for candidate in candidates:
+        price = prices.get(candidate.key)
+        snapshots.append(
+            CandidateSnapshot(
+                snapshot_date=snapshot_date,
+                asset_key=candidate.key,
+                name=candidate.name,
+                asset_class=candidate.asset_class,
+                score=candidate.score,
+                confidence=candidate.confidence,
+                components=candidate.components,
+                reasons=candidate.reasons,
+                sources=candidate.sources,
+                signal_count=candidate.signal_count,
+                reference_price=float(price["price"]) if price else None,  # type: ignore[arg-type]
+                reference_price_date=price["date"] if price else None,  # type: ignore[arg-type]
+                price_provider=str(price["provider"]) if price else None,
+                price_instrument=str(price["instrument"]) if price else None,
+                created_at=now,
+            )
+        )
+    return repositories.snapshots.record_many(snapshots, now=now)
+
+
+def backtest(
+    repositories: Any,
+    *,
+    horizon_days: int = 30,
+    min_samples: int = 5,
+    since_days: int = 365,
+    now: datetime | None = None,
+) -> BacktestReport:
+    reference = now or datetime.now(timezone.utc)
+    since = reference.date() - timedelta(days=since_days)
+    snapshots = repositories.snapshots.list(since=since, limit=5000)
+    pairs = {
+        (snapshot.price_provider, snapshot.price_instrument)
+        for snapshot in snapshots
+        if snapshot.price_provider and snapshot.price_instrument
+    }
+    prices: dict[tuple[str, str], list[tuple[date, float]]] = {}
+    for provider, instrument in pairs:
+        observations = repositories.observations.list(
+            provider=provider, instrument_id=instrument, metric="close"
+        )
+        prices[(provider, instrument)] = [
+            (item.reference_date, float(item.value)) for item in observations
+        ]
+    return evaluate(
+        snapshots, prices, horizon_days=horizon_days, min_samples=min_samples
     )

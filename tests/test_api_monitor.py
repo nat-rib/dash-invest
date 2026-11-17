@@ -1,12 +1,16 @@
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
 
 import api.dependencies as dependencies
 from api.main import create_app
+from src.domain.observations import Observation, QualityStatus
 from src.domain.signals import AssetMention, Signal
+from src.persistence.monitor import AlertRecord, CandidateSnapshot, SnapshotRepository
+from src.persistence.observations import ObservationRepository
 from src.persistence.signals import SignalRepository
 
 SNAPSHOT = {
@@ -126,3 +130,145 @@ def test_sem_carteira_retorna_400(client, monkeypatch, tmp_path):
 
     assert response.status_code == 400
     assert "Importe uma carteira" in response.json()["detail"]
+
+
+def seed_backtest() -> tuple[date, date]:
+    database = dependencies.get_database()
+    now = datetime.now(timezone.utc)
+    snapshot_date = date.today() - timedelta(days=60)
+    future = snapshot_date + timedelta(days=30)
+    SnapshotRepository(database).record_many(
+        [
+            CandidateSnapshot(
+                snapshot_date=snapshot_date,
+                asset_key="ticker:PETR4",
+                name="Petrobras",
+                asset_class="acao",
+                score=90,
+                confidence=0.8,
+                components={},
+                reasons=(),
+                sources=(),
+                signal_count=1,
+                reference_price=100.0,
+                reference_price_date=snapshot_date,
+                price_provider="csv",
+                price_instrument="PETR4.SAO",
+                created_at=now,
+            ),
+            CandidateSnapshot(
+                snapshot_date=snapshot_date,
+                asset_key="ticker:VALE3",
+                name="Vale",
+                asset_class="acao",
+                score=10,
+                confidence=0.8,
+                components={},
+                reasons=(),
+                sources=(),
+                signal_count=1,
+                reference_price=100.0,
+                reference_price_date=snapshot_date,
+                price_provider="csv",
+                price_instrument="VALE3.SAO",
+                created_at=now,
+            ),
+            CandidateSnapshot(
+                snapshot_date=snapshot_date,
+                asset_key="ticker:ITUB4",
+                name="Itaú",
+                asset_class="acao",
+                score=50,
+                confidence=0.8,
+                components={},
+                reasons=(),
+                sources=(),
+                signal_count=1,
+                reference_price=100.0,
+                reference_price_date=snapshot_date,
+                price_provider="csv",
+                price_instrument="ITUB4.SAO",
+                created_at=now,
+            ),
+        ],
+        now=now,
+    )
+    ObservationRepository(database).record_many(
+        [
+            Observation(
+                provider="csv",
+                metric="close",
+                instrument_id="PETR4.SAO",
+                value=Decimal("110"),
+                currency="BRL",
+                reference_date=future,
+                period_end=future,
+                parser_version="test",
+                quality_status=QualityStatus.VERIFIED,
+            ),
+            Observation(
+                provider="csv",
+                metric="close",
+                instrument_id="VALE3.SAO",
+                value=Decimal("95"),
+                currency="BRL",
+                reference_date=future,
+                period_end=future,
+                parser_version="test",
+                quality_status=QualityStatus.VERIFIED,
+            ),
+            Observation(
+                provider="csv",
+                metric="close",
+                instrument_id="ITUB4.SAO",
+                value=Decimal("100"),
+                currency="BRL",
+                reference_date=future,
+                period_end=future,
+                parser_version="test",
+                quality_status=QualityStatus.VERIFIED,
+            ),
+        ]
+    )
+    return snapshot_date, future
+
+
+def test_backtest_do_ranking(client):
+    seed_backtest()
+
+    body = client.get(
+        "/api/monitor/backtest", params={"horizon_days": 30, "min_samples": 2}
+    ).json()
+
+    assert body["evaluated"] == 3
+    assert body["available"] is True
+    assert body["spread"] == pytest.approx(0.15)
+    assert body["rank_correlation"] == pytest.approx(1.0)
+
+
+def test_alertas_e_configuracao(client, monkeypatch):
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.delenv("ALERT_CHANNELS", raising=False)
+    monkeypatch.delenv("ALERT_MIN_SCORE", raising=False)
+
+    database = dependencies.get_database()
+    dependencies.get_repositories().alerts.record(
+        AlertRecord(
+            asset_key="ticker:PETR4",
+            name="Petrobras",
+            score=90,
+            channel="console",
+            message="alert",
+            sent_at=datetime.now(timezone.utc),
+        )
+    )
+
+    alerts = client.get("/api/monitor/alerts").json()
+    config = client.get("/api/monitor/alert-config").json()
+
+    assert alerts["total"] == 1
+    assert alerts["items"][0]["channel"] == "console"
+    assert config["channels"] == ["console"]
+    assert config["min_score"] == 80.0
+    assert config["telegram_configured"] is False

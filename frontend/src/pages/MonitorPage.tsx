@@ -2,8 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { MetricCard } from "../components/insights";
 import { Button, Card, EmptyState, ErrorBox, Loading, SelectInput, Table } from "../components/ui";
-import type { Candidate, MonitorSignal } from "../services/monitor";
-import { fetchCandidates, fetchMonitorSignals } from "../services/monitor";
+import type { AlertConfig, AlertRecord, BacktestReport, Candidate, MonitorSignal } from "../services/monitor";
+import {
+  fetchAlertConfig,
+  fetchBacktest,
+  fetchCandidates,
+  fetchMonitorAlerts,
+  fetchMonitorSignals,
+} from "../services/monitor";
 
 const CLASS_LABELS: Record<string, string> = {
   renda_fixa: "Renda fixa",
@@ -33,6 +39,10 @@ const CLASS_OPTIONS = [
 export default function MonitorPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [signals, setSignals] = useState<MonitorSignal[]>([]);
+  const [backtest, setBacktest] = useState<BacktestReport | null>(null);
+  const [alerts, setAlerts] = useState<AlertRecord[]>([]);
+  const [alertConfig, setAlertConfig] = useState<AlertConfig | null>(null);
+  const [horizon, setHorizon] = useState("30");
   const [minScore, setMinScore] = useState("");
   const [assetClass, setAssetClass] = useState("");
   const [query, setQuery] = useState("");
@@ -42,16 +52,31 @@ export default function MonitorPage() {
   const load = () => {
     setLoading(true);
     setError(null);
-    Promise.all([fetchCandidates({ limit: 100 }), fetchMonitorSignals(30)])
-      .then(([ranking, feed]) => {
+    Promise.all([
+      fetchCandidates({ limit: 100 }),
+      fetchMonitorSignals(30),
+      fetchBacktest(Number(horizon)),
+      fetchMonitorAlerts(20),
+      fetchAlertConfig(),
+    ])
+      .then(([ranking, feed, evaluation, alertList, config]) => {
         setCandidates(ranking.items);
         setSignals(feed.items);
+        setBacktest(evaluation);
+        setAlerts(alertList.items);
+        setAlertConfig(config);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
+
+  useEffect(() => {
+    fetchBacktest(Number(horizon))
+      .then(setBacktest)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+  }, [horizon]);
 
   const filtered = useMemo(() => {
     const minimum = Number(minScore.replace(",", ".")) || 0;
@@ -134,6 +159,85 @@ export default function MonitorPage() {
         )}
       </Card>
 
+      <Card title="Avaliação do ranking" subtitle="Retorno futuro dos snapshots diários por faixa de score.">
+        <div className="field-row">
+          <div className="field">
+            <span className="field-label">Horizonte</span>
+            <SelectInput
+              value={horizon}
+              onChange={setHorizon}
+              options={[
+                { value: "30", label: "30 dias" },
+                { value: "90", label: "90 dias" },
+              ]}
+            />
+          </div>
+        </div>
+        {backtest && !backtest.available && (
+          <div className="warning-box">{backtest.reason ?? "Sem dados suficientes."}</div>
+        )}
+        {backtest && backtest.available && (
+          <>
+            <div className="metric-grid">
+              <MetricCard
+                label="Avaliados"
+                value={String(backtest.evaluated)}
+                hint={`${backtest.snapshots} snapshots`}
+              />
+              <MetricCard label="Spread topo-base" value={percent(backtest.spread)} />
+              <MetricCard
+                label="Correlação de postos"
+                value={backtest.rank_correlation === null ? "—" : backtest.rank_correlation.toFixed(2)}
+              />
+              <MetricCard
+                label="Acerto do topo"
+                value={percent(backtest.buckets[4]?.hit_rate ?? null)}
+              />
+            </div>
+            <Table head={["Faixa de score", "Amostras", "Retorno médio", "Acerto"]}>
+              {backtest.buckets.map((bucket) => (
+                <tr key={bucket.label}>
+                  <td>{bucket.label}</td>
+                  <td>{bucket.count}</td>
+                  <td>{percent(bucket.average_return)}</td>
+                  <td>{percent(bucket.hit_rate)}</td>
+                </tr>
+              ))}
+            </Table>
+          </>
+        )}
+      </Card>
+
+      <Card
+        title="Alertas"
+        subtitle={
+          alertConfig
+            ? `Canais: ${alertConfig.channels.join(", ")} · score mínimo ${alertConfig.min_score} · cooldown ${alertConfig.cooldown_days} dias`
+            : undefined
+        }
+      >
+        {alerts.length === 0 ? (
+          <p className="muted">Nenhum alerta enviado ainda.</p>
+        ) : (
+          <Table head={["Data", "Ativo", "Score", "Canal"]}>
+            {alerts.map((alert, index) => (
+              <tr key={`${alert.asset_key}-${index}`}>
+                <td>{formatDate(alert.sent_at)}</td>
+                <td>{alert.name}</td>
+                <td>{alert.score.toFixed(0)}</td>
+                <td>{alert.channel}</td>
+              </tr>
+            ))}
+          </Table>
+        )}
+        {alertConfig && (
+          <p className="field-hint">
+            {alertConfig.telegram_configured ? "Telegram configurado." : "Telegram não configurado."}{" "}
+            {alertConfig.email_configured ? "E-mail configurado." : "E-mail não configurado."}
+          </p>
+        )}
+      </Card>
+
       <Card title="Últimos sinais" subtitle="Fontes abertas monitoradas; clique para abrir a matéria.">
         {signals.length === 0 ? (
           <p className="muted">
@@ -207,6 +311,11 @@ function formatDate(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function percent(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "—";
+  return `${(value * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 }
 
 function ErrorBoxRender({ error }: { error: string | null }) {
