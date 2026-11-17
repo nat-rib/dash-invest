@@ -95,11 +95,24 @@ def test_ranking_prioriza_renda_fixa_abaixo_do_alvo(client):
 
 def test_lista_sinais_e_fontes(client):
     seed_signals()
+    repository = SignalRepository(dependencies.get_database())
+    now = datetime.now(timezone.utc)
+    repository.record(
+        Signal(
+            source="InfoMoney",
+            title="Resultado da loteria",
+            url="https://example/loteria",
+            published_at=now,
+            collected_at=now,
+        )
+    )
 
     signals = client.get("/api/monitor/signals").json()
+    all_signals = client.get("/api/monitor/signals?with_assets=false").json()
     sources = client.get("/api/monitor/sources").json()
 
     assert signals["total"] == 2
+    assert all_signals["total"] == 3
     assert signals["items"][0]["assets"]
     assert sources["items"]
 

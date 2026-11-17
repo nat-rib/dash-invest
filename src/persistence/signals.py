@@ -73,6 +73,7 @@ class SignalRepository:
         *,
         since: datetime | None = None,
         source: str | None = None,
+        with_assets: bool = False,
         limit: int = 200,
         offset: int = 0,
     ) -> list[Signal]:
@@ -84,6 +85,8 @@ class SignalRepository:
         if source is not None:
             clauses.append("source = ?")
             params.append(source)
+        if with_assets:
+            clauses.append("assets_json != '[]'")
 
         query = "SELECT * FROM signals"
         if clauses:

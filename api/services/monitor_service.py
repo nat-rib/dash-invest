@@ -140,8 +140,11 @@ def signals(
     limit: int = 100,
     source: str | None = None,
     lookback_days: int | None = None,
+    with_assets: bool = True,
 ) -> list:
     since = None
     if lookback_days is not None:
         since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
-    return repositories.signals.list(since=since, source=source, limit=limit)
+    return repositories.signals.list(
+        since=since, source=source, with_assets=with_assets, limit=limit
+    )
