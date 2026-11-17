@@ -16,8 +16,8 @@ from fastapi.staticfiles import StaticFiles
 
 from api import config
 from api.routes import (
-    analysis, data, fit, import_snapshot, ledger, market, mortgage, overview, performance,
-    research, risk, screener,
+    analysis, data, fit, import_snapshot, ledger, market, monitor, mortgage, overview,
+    performance, research, risk, screener,
 )
 
 logging.basicConfig(
@@ -61,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(screener.router)
     app.include_router(fit.router)
     app.include_router(research.router)
+    app.include_router(monitor.router)
 
     @app.get("/api/health", tags=["health"])
     def health() -> JSONResponse:

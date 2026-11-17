@@ -120,3 +120,34 @@ sudo systemctl start dash-invest-prices.service   # executa agora
 ```
 
 O timer usa o timezone do host (`timedatectl`). Se o host não estiver em `America/Sao_Paulo`, ajuste o `OnCalendar` ou o timezone da VPS.
+
+## 8. Monitor de ativos (sinais)
+
+O timer `dash-invest-signals.timer` coleta notícias de fontes abertas seis vezes ao dia (06, 09, 12, 15, 18 e 21h) e grava sinais com os ativos mencionados. O ranking é calculado sob demanda pela página **Monitor**, cruzando os sinais com a carteira.
+
+Fontes padrão: InfoMoney, Money Times, Exame, CVM e Google News RSS (Tesouro, CDB, FIIs, ETFs e cripto). Para personalizar:
+
+1. Copie `monitor_sources.example.json` para o volume de dados, por exemplo `/opt/personal-cloud/data/dash-invest/monitor_sources.json`.
+2. Ajuste `targets` (alocação-alvo), `max_asset_share` e a lista de `sources`.
+3. Defina `MONITOR_CONFIG_PATH=/app/data/monitor_sources.json` no `.env` da VPS e recrie o container.
+
+O timer é instalado pelo `install.sh` em VPS novas. Em uma VPS existente:
+
+```bash
+cd /home/deploy/dash-invest
+sudo install -m 644 deploy/systemd/dash-invest-signals.service /etc/systemd/system/
+sudo install -m 644 deploy/systemd/dash-invest-signals.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now dash-invest-signals.timer
+```
+
+Verificar e executar agora:
+
+```bash
+systemctl list-timers dash-invest-signals.timer
+sudo systemctl start dash-invest-signals.service
+journalctl -u dash-invest-signals.service -n 50 --no-pager
+docker exec dash-invest python -m jobs.collect_signals --sleep 2
+```
+
+O monitor é uma triagem determinística, não recomendação de investimento. Telegram ainda não está integrado; o passo a passo está em [`docs/telegram-monitor.md`](../docs/telegram-monitor.md).
