@@ -9,9 +9,9 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api import config
@@ -77,7 +77,20 @@ def create_app() -> FastAPI:
 
     dist = config.frontend_dist()
     if dist.exists():
-        app.mount("/", StaticFiles(directory=str(dist), html=True), name="frontend")
+        root = dist.resolve()
+        assets = root / "assets"
+        if assets.exists():
+            app.mount("/assets", StaticFiles(directory=str(assets)), name="assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_frontend(full_path: str) -> FileResponse:
+            """Fallback do React Router: arquivos reais, senão index.html."""
+            if full_path == "api" or full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not Found")
+            candidate = (root / full_path).resolve()
+            if candidate.is_file() and root in candidate.parents:
+                return FileResponse(candidate)
+            return FileResponse(root / "index.html")
 
     return app
 
