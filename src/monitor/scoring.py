@@ -55,6 +55,14 @@ class PortfolioContext:
 
 
 @dataclass(frozen=True)
+class SignalExample:
+    source: str
+    title: str
+    url: str
+    published_at: datetime | None
+
+
+@dataclass(frozen=True)
 class SignalAggregate:
     key: str
     name: str
@@ -64,6 +72,7 @@ class SignalAggregate:
     signal_count: int
     last_seen: datetime
     max_weight: float
+    examples: tuple[SignalExample, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,6 +91,7 @@ class Candidate:
     cnpj: str | None = None
     price_provider: str | None = None
     price_instrument: str | None = None
+    examples: tuple[SignalExample, ...] = ()
 
 
 def aggregate_signals(
@@ -111,6 +121,7 @@ def aggregate_signals(
                     "count": 0,
                     "last_seen": when,
                     "max_weight": weight,
+                    "examples": [],
                 },
             )
             if asset.confidence >= float(entry["confidence"]):
@@ -125,6 +136,17 @@ def aggregate_signals(
             entry["count"] = int(entry["count"]) + 1
             entry["last_seen"] = max(entry["last_seen"], when)  # type: ignore[type-var]
             entry["max_weight"] = max(float(entry["max_weight"]), weight)
+            examples = entry["examples"]
+            assert isinstance(examples, list)
+            if len(examples) < 3 and all(example.url != signal.url for example in examples):
+                examples.append(
+                    SignalExample(
+                        source=signal.source,
+                        title=signal.title,
+                        url=signal.url,
+                        published_at=signal.published_at,
+                    )
+                )
 
     aggregates = [
         SignalAggregate(
@@ -136,6 +158,7 @@ def aggregate_signals(
             signal_count=int(entry["count"]),
             last_seen=entry["last_seen"],  # type: ignore[arg-type]
             max_weight=float(entry["max_weight"]),
+            examples=tuple(entry["examples"]),  # type: ignore[arg-type]
         )
         for key, entry in grouped.items()
     ]
@@ -310,6 +333,7 @@ def rank_candidates(
                 signal_count=aggregate.signal_count,
                 last_seen=aggregate.last_seen,
                 cnpj=aggregate.cnpj,
+                examples=aggregate.examples,
             )
         )
 

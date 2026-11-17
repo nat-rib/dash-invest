@@ -34,6 +34,7 @@ const candidates = {
       cnpj: null,
       price_provider: null,
       price_instrument: null,
+      examples: [],
     },
     {
       key: "ticker:PETR4",
@@ -57,6 +58,14 @@ const candidates = {
       cnpj: "33000167000101",
       price_provider: "alpha_vantage",
       price_instrument: "PETR4.SAO",
+      examples: [
+        {
+          source: "InfoMoney",
+          title: "Petrobras anuncia dividendos",
+          url: "https://example/petrobras",
+          published_at: "2026-11-16T12:00:00Z",
+        },
+      ],
     },
   ],
   total: 2,
@@ -119,6 +128,13 @@ describe("RadarPage", () => {
     const risco = screen.getByRole("link", { name: "Risco" });
     expect(risco.getAttribute("href")).toContain("provider=alpha_vantage");
     expect(risco.getAttribute("href")).toContain("instrument=PETR4.SAO");
+
+    const details = screen.getAllByRole("button", { name: "Detalhes" }).at(-1);
+    expect(details).toBeTruthy();
+    fireEvent.click(details as HTMLButtonElement);
+    expect(
+      screen.getByRole("link", { name: "Petrobras anuncia dividendos" }),
+    ).toBeTruthy();
 
     const follow = screen.getAllByRole("button", { name: "Seguir" }).at(-1);
     expect(follow).toBeTruthy();

@@ -8,6 +8,13 @@ export interface AssetMention {
   cnpj: string | null;
 }
 
+export interface SignalExample {
+  source: string;
+  title: string;
+  url: string;
+  published_at: string | null;
+}
+
 export interface Candidate {
   key: string;
   name: string;
@@ -23,6 +30,7 @@ export interface Candidate {
   cnpj: string | null;
   price_provider: string | null;
   price_instrument: string | null;
+  examples: SignalExample[];
 }
 
 export interface CandidateList {

@@ -2,7 +2,7 @@
 Description=Agenda de coleta de sinais do Dash-Invest
 
 [Timer]
-OnCalendar=*-*-* 06,09,12,15,18,21:20:00
+OnCalendar=*-*-* 06,10,14,18:20:00
 Persistent=true
 RandomizedDelaySec=300
 Unit=dash-invest-signals.service

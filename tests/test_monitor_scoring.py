@@ -52,6 +52,7 @@ def test_agrega_fontes_e_prioriza_lacuna_de_renda_fixa():
     assert ranked[0].asset_class == "renda_fixa"
     assert any("abaixo do alvo" in reason for reason in ranked[0].reasons)
     assert "fundamentos" in ranked[0].missing
+    assert len(ranked[0].examples) == 2
 
     petro = next(item for item in ranked if item.key == "ticker:PETR4")
     assert petro.components["concentration"] == 0.0

@@ -246,6 +246,21 @@ export default function RadarPage() {
                       <strong>Fontes</strong>
                       <p>{item.sources.join(", ") || "—"}</p>
                     </div>
+                    {item.examples.length > 0 && (
+                      <div>
+                        <strong>Sinais recentes</strong>
+                        <ul>
+                          {item.examples.map((example) => (
+                            <li key={example.url}>
+                              <a href={example.url} target="_blank" rel="noreferrer">
+                                {example.title}
+                              </a>{" "}
+                              <span className="muted">({example.source})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {item.missing.length > 0 && (
                       <p className="field-hint">Sem dados: {item.missing.join(", ")}.</p>
                     )}

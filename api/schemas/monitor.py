@@ -14,6 +14,13 @@ class AssetMentionOut(BaseModel):
     cnpj: str | None = None
 
 
+class SignalExampleOut(BaseModel):
+    source: str
+    title: str
+    url: str
+    published_at: datetime | None = None
+
+
 class CandidateOut(BaseModel):
     key: str
     name: str
@@ -29,6 +36,7 @@ class CandidateOut(BaseModel):
     cnpj: str | None = None
     price_provider: str | None = None
     price_instrument: str | None = None
+    examples: list[SignalExampleOut] = []
 
 
 class CandidateListOut(BaseModel):
