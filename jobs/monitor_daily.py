@@ -18,6 +18,7 @@ from src.persistence.issuers import IssuerRepository
 from src.persistence.monitor import AlertRepository, SnapshotRepository
 from src.persistence.observations import ObservationRepository
 from src.persistence.signals import SignalRepository
+from src.persistence.watchlist import WatchlistRepository
 from src.providers.alpha_vantage import AlphaVantageProvider
 
 
@@ -28,35 +29,39 @@ class Bundle:
         self.issuers = IssuerRepository(database)
         self.snapshots = SnapshotRepository(database)
         self.alerts = AlertRepository(database)
+        self.watchlist = WatchlistRepository(database)
 
 
-def price_symbol(candidate) -> str | None:
-    if not candidate.key.startswith("ticker:"):
+def price_symbol(key: str, asset_class: str) -> str | None:
+    if not key.startswith("ticker:"):
         return None
-    ticker = candidate.key.split(":", 1)[1]
-    if candidate.asset_class in {"acao", "fii", "etf"}:
+    ticker = key.split(":", 1)[1]
+    if asset_class in {"acao", "fii", "etf"}:
         return f"{ticker}.SAO"
-    if candidate.asset_class == "exterior":
+    if asset_class == "exterior":
         return ticker
     return None
 
 
 def ingest_candidate_prices(
-    bundle: Bundle, candidates: list, *, max_symbols: int
+    bundle: Bundle, candidates: list, watchlist_items: list, *, max_symbols: int
 ) -> int:
-    """Atualiza cotações dos candidatos do topo para viabilizar o backtest."""
+    """Atualiza cotações da watchlist e dos candidatos do topo para o backtest."""
     api_key = os.environ.get("ALPHA_VANTAGE_API_KEY", "").strip()
     if not api_key:
         print("aviso: ALPHA_VANTAGE_API_KEY ausente; preços de candidatos não atualizados")
         return 0
 
     provider = AlphaVantageProvider(api_key=api_key)
+    entries = [(item.asset_key, item.asset_class) for item in watchlist_items]
+    entries.extend((candidate.key, candidate.asset_class) for candidate in candidates)
+
     inserted = 0
     seen: set[str] = set()
-    for candidate in candidates:
+    for key, asset_class in entries:
         if len(seen) >= max_symbols:
             break
-        symbol = price_symbol(candidate)
+        symbol = price_symbol(key, asset_class)
         if not symbol or symbol in seen:
             continue
         seen.add(symbol)
@@ -67,7 +72,7 @@ def ingest_candidate_prices(
             )
         except Exception as error:  # noqa: BLE001 - um símbolo não impede os demais
             print(f"aviso: preço {symbol}: {error}")
-    print(f"{inserted} novas cotações para {len(seen)} candidato(s)")
+    print(f"{inserted} novas cotações para {len(seen)} ativo(s) monitorado(s)")
     return inserted
 
 
@@ -123,7 +128,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.skip_prices:
         ingest_candidate_prices(
-            bundle, candidates, max_symbols=args.max_price_symbols
+            bundle,
+            candidates,
+            bundle.watchlist.list(),
+            max_symbols=args.max_price_symbols,
         )
 
     inserted = monitor_service.record_candidates_snapshot(

@@ -35,6 +35,12 @@ export function sendJson<T>(url: string, method: string, body: unknown): Promise
     .then((response) => response.json() as T);
 }
 
+export function deleteJson(url: string): Promise<void> {
+  return fetch(url, { method: "DELETE" })
+    .then(handle)
+    .then(() => undefined);
+}
+
 export function sendForm<T>(url: string, file: File, fields: Record<string, string>): Promise<T> {
   const form = new FormData();
   form.append("file", file);

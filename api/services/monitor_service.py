@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -65,11 +66,16 @@ def _fundamentals(repositories: Any) -> dict[str, dict[str, float | None]]:
     return fundamentals_from_observations(observations)
 
 
+def _available_series(repositories: Any) -> dict[str, Any]:
+    return {
+        series.instrument_id: series
+        for series in repositories.observations.series_keys(metric="close")
+        if series.instrument_id
+    }
+
+
 def _momentum(repositories: Any, keys: list[str]) -> dict[str, dict[str, float]]:
-    available = {}
-    for series in repositories.observations.series_keys(metric="close"):
-        if series.instrument_id:
-            available[series.instrument_id] = series
+    available = _available_series(repositories)
 
     momentum: dict[str, dict[str, float]] = {}
     for key in keys:
@@ -100,6 +106,19 @@ def _momentum(repositories: Any, keys: list[str]) -> dict[str, dict[str, float]]
     return momentum
 
 
+def _price_series(repositories: Any, keys: list[str]) -> dict[str, tuple[str, str]]:
+    available = _available_series(repositories)
+    result: dict[str, tuple[str, str]] = {}
+    for key in keys:
+        if not key.startswith("ticker:"):
+            continue
+        ticker = key.split(":", 1)[1]
+        series = available.get(ticker) or available.get(f"{ticker}.SAO")
+        if series is not None and series.instrument_id:
+            result[key] = (series.provider, series.instrument_id)
+    return result
+
+
 def candidates(
     repositories: Any,
     *,
@@ -128,6 +147,22 @@ def candidates(
         momentum=_momentum(repositories, [item.key for item in aggregates]),
         now=reference,
     )
+
+    series_map = _price_series(repositories, [item.key for item in ranked])
+    enriched = []
+    for item in ranked:
+        info = series_map.get(item.key)
+        if info is not None:
+            enriched.append(
+                replace(
+                    item,
+                    price_provider=info[0],
+                    price_instrument=info[1],
+                )
+            )
+        else:
+            enriched.append(item)
+    ranked = enriched
 
     if asset_class:
         ranked = [item for item in ranked if item.asset_class == asset_class]

@@ -34,10 +34,16 @@ export default function FundamentalsPage() {
     dataset === "itr" && ytd && !metric.endsWith("_ytd") ? `${metric}_ytd` : metric;
 
   useEffect(() => {
+    const initialCnpj = new URLSearchParams(window.location.search).get("cnpj");
     fetchIssuers()
       .then((data) => {
         setIssuers(data.items);
-        setSelected((current) => current || data.items[0]?.cnpj || "");
+        setSelected((current) => {
+          if (initialCnpj && data.items.some((issuer) => issuer.cnpj === initialCnpj)) {
+            return initialCnpj;
+          }
+          return current || data.items[0]?.cnpj || "";
+        });
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);

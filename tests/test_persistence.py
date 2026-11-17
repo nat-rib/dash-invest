@@ -34,6 +34,7 @@ def test_migrations_are_versioned_and_idempotent(tmp_path):
         (6, "0006_issuers.sql"),
         (7, "0007_signals.sql"),
         (8, "0008_monitor_snapshots.sql"),
+        (9, "0009_watchlist.sql"),
     ]
 
 

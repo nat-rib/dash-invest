@@ -20,6 +20,9 @@ export interface Candidate {
   sources: string[];
   signal_count: number;
   last_seen: string | null;
+  cnpj: string | null;
+  price_provider: string | null;
+  price_instrument: string | null;
 }
 
 export interface CandidateList {

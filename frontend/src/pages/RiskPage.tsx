@@ -16,10 +16,19 @@ export default function RiskPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get("provider");
+    const instrument = params.get("instrument");
+    const wanted = instrument ? `${provider ?? ""}|${instrument}` : "";
     fetchSeriesKeys()
       .then((data) => {
         setKeys(data.items);
-        setSelected((current) => current || seriesValue(data.items[0]));
+        setSelected((current) => {
+          if (wanted && data.items.some((item) => seriesValue(item) === wanted)) {
+            return wanted;
+          }
+          return current || seriesValue(data.items[0]);
+        });
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);
