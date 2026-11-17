@@ -18,6 +18,7 @@ from src.persistence.issuers import IssuerRepository
 from src.persistence.monitor import AlertRepository, SnapshotRepository
 from src.persistence.observations import ObservationRepository
 from src.persistence.signals import SignalRepository
+from src.providers.alpha_vantage import AlphaVantageProvider
 
 
 class Bundle:
@@ -29,6 +30,47 @@ class Bundle:
         self.alerts = AlertRepository(database)
 
 
+def price_symbol(candidate) -> str | None:
+    if not candidate.key.startswith("ticker:"):
+        return None
+    ticker = candidate.key.split(":", 1)[1]
+    if candidate.asset_class in {"acao", "fii", "etf"}:
+        return f"{ticker}.SAO"
+    if candidate.asset_class == "exterior":
+        return ticker
+    return None
+
+
+def ingest_candidate_prices(
+    bundle: Bundle, candidates: list, *, max_symbols: int
+) -> int:
+    """Atualiza cotações dos candidatos do topo para viabilizar o backtest."""
+    api_key = os.environ.get("ALPHA_VANTAGE_API_KEY", "").strip()
+    if not api_key:
+        print("aviso: ALPHA_VANTAGE_API_KEY ausente; preços de candidatos não atualizados")
+        return 0
+
+    provider = AlphaVantageProvider(api_key=api_key)
+    inserted = 0
+    seen: set[str] = set()
+    for candidate in candidates:
+        if len(seen) >= max_symbols:
+            break
+        symbol = price_symbol(candidate)
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        currency = "BRL" if symbol.endswith(".SAO") else "USD"
+        try:
+            inserted += bundle.observations.record_many(
+                provider.daily_prices(symbol, currency=currency)
+            )
+        except Exception as error:  # noqa: BLE001 - um símbolo não impede os demais
+            print(f"aviso: preço {symbol}: {error}")
+    print(f"{inserted} novas cotações para {len(seen)} candidato(s)")
+    return inserted
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Registra snapshot do ranking e envia alertas."
@@ -37,6 +79,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--min-score", type=float, default=None)
     parser.add_argument("--cooldown-days", type=int, default=None)
     parser.add_argument("--max-alerts", type=int, default=None)
+    parser.add_argument(
+        "--max-price-symbols",
+        type=int,
+        default=10,
+        help="quantos tickers de candidatos atualizar por execução",
+    )
+    parser.add_argument(
+        "--skip-prices",
+        action="store_true",
+        help="não consulta cotações de candidatos",
+    )
     parser.add_argument(
         "--test",
         action="store_true",
@@ -68,6 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"erro: {error}")
         return 1
 
+    if not args.skip_prices:
+        ingest_candidate_prices(
+            bundle, candidates, max_symbols=args.max_price_symbols
+        )
+
     inserted = monitor_service.record_candidates_snapshot(
         bundle, candidates, snapshot_date=now.date(), now=now
     )
@@ -91,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     print(
-        f"{inserted} snapshots · {len(result.sent)} alertas enviados · "
+        f"{inserted} snapshots atualizados · {len(result.sent)} alertas enviados · "
         f"{result.skipped_cooldown} em cooldown · "
         f"{result.skipped_below_score} abaixo de {min_score:.0f}"
     )

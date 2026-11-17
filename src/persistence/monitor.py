@@ -68,16 +68,30 @@ class SnapshotRepository:
     def record_many(
         self, snapshots: Iterable[CandidateSnapshot], *, now: datetime
     ) -> int:
-        inserted = 0
+        items = list(snapshots)
         with self.database.transaction() as connection:
-            for snapshot in snapshots:
-                cursor = connection.execute(
-                    """INSERT OR IGNORE INTO candidate_snapshots (
+            for snapshot in items:
+                connection.execute(
+                    """INSERT INTO candidate_snapshots (
                         snapshot_date, asset_key, name, asset_class, score, confidence,
                         components_json, reasons_json, sources_json, signal_count,
                         reference_price, reference_price_date, price_provider,
                         price_instrument, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(snapshot_date, asset_key) DO UPDATE SET
+                        name = excluded.name,
+                        asset_class = excluded.asset_class,
+                        score = excluded.score,
+                        confidence = excluded.confidence,
+                        components_json = excluded.components_json,
+                        reasons_json = excluded.reasons_json,
+                        sources_json = excluded.sources_json,
+                        signal_count = excluded.signal_count,
+                        reference_price = COALESCE(excluded.reference_price, candidate_snapshots.reference_price),
+                        reference_price_date = COALESCE(excluded.reference_price_date, candidate_snapshots.reference_price_date),
+                        price_provider = COALESCE(excluded.price_provider, candidate_snapshots.price_provider),
+                        price_instrument = COALESCE(excluded.price_instrument, candidate_snapshots.price_instrument),
+                        created_at = excluded.created_at""",
                     (
                         snapshot.snapshot_date.isoformat(),
                         snapshot.asset_key,
@@ -98,8 +112,7 @@ class SnapshotRepository:
                         (snapshot.created_at or now).isoformat(),
                     ),
                 )
-                inserted += int(cursor.rowcount)
-        return inserted
+        return len(items)
 
     def list(
         self, *, since: date | None = None, limit: int = 5000

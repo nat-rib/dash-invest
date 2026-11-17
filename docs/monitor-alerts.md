@@ -87,6 +87,12 @@ retorno = preço_no_horizonte / preço_de_referência - 1
 O preço do horizonte é o último fechamento até a data-alvo (tolerância de 7
 dias). Sem preço de referência ou sem preço maduro, o snapshot não entra.
 
+O job diário também atualiza as cotações dos **candidatos do topo** (até 10 por
+execução, além dos tickers da carteira) para que o backtest tenha preço de
+referência e de horizonte. A cota gratuita do Alpha Vantage é respeitada; o
+limite pode ser ajustado com `--max-price-symbols` ou desligado com
+`--skip-prices`.
+
 ### Como ler
 
 - **Avaliados**: snapshots com retorno calculado.

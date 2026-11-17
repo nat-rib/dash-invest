@@ -3,7 +3,8 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from src.monitor.backtest import evaluate
-from src.persistence.monitor import CandidateSnapshot
+from src.persistence.database import SQLiteDatabase
+from src.persistence.monitor import CandidateSnapshot, SnapshotRepository
 
 BASE = date(2026, 1, 1)
 
@@ -66,3 +67,36 @@ def test_backtest_sem_amostra_explica_motivo():
 
     assert report.available is False
     assert report.reason
+
+
+def test_snapshot_upsert_preenche_preco_em_reexecucao(tmp_path):
+    database = SQLiteDatabase(tmp_path / "monitor.db")
+    database.initialize()
+    repository = SnapshotRepository(database)
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    original = snapshot(90, "A")
+
+    repository.record_many(
+        [
+            CandidateSnapshot(
+                snapshot_date=original.snapshot_date,
+                asset_key=original.asset_key,
+                name=original.name,
+                asset_class=original.asset_class,
+                score=original.score,
+                confidence=original.confidence,
+                components={},
+                reasons=(),
+                sources=(),
+                signal_count=1,
+                created_at=now,
+            )
+        ],
+        now=now,
+    )
+    repository.record_many([original], now=now)
+
+    stored = repository.list()
+    assert len(stored) == 1
+    assert stored[0].reference_price == 100.0
+    assert stored[0].price_instrument == "A"
