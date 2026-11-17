@@ -129,7 +129,7 @@ FIXED_INCOME = (
 
 # Indícios de que a notícia é sobre CDB/oferta, mesmo sem a palavra "CDB" no título.
 CDB_CUE_RE = re.compile(
-    r"\b(cdb|cdi|renda fixa|prefixado|pos-fixado|liquidez|lci|lca|rentabilidade|rende(?:m|ndo)?)\b"
+    r"\b(cdb|cdi|renda fixa|prefixado|pos-fixado|liquidez|lci|lca)\b"
 )
 
 # alias normalizado -> (ticker ou None, nome, classe, cnpj)

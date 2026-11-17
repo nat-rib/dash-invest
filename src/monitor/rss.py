@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 
 import httpx
 
-USER_AGENT = "dash-invest-monitor/1.0 (+https://github.com/nat-rib/dash-invest)"
+USER_AGENT = (
+    "Mozilla/5.0 (compatible; DashInvestMonitor/1.0; "
+    "+https://github.com/nat-rib/dash-invest)"
+)
 
 
 @dataclass(frozen=True)
