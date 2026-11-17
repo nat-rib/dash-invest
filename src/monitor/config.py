@@ -73,6 +73,36 @@ DEFAULT_SOURCES: tuple[Source, ...] = (
         hint="cdb",
     ),
     Source(
+        "Google News — CDB Nubank (30d)",
+        "https://news.google.com/rss/search?q=CDB+Nubank+when%3A30d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+        hint="cdb",
+    ),
+    Source(
+        "Google News — CDB Inter (30d)",
+        "https://news.google.com/rss/search?q=CDB+Inter+when%3A30d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+        hint="cdb",
+    ),
+    Source(
+        "Google News — CDB C6 (30d)",
+        "https://news.google.com/rss/search?q=CDB+C6+when%3A30d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+        hint="cdb",
+    ),
+    Source(
+        "Google News — CDB BTG (30d)",
+        "https://news.google.com/rss/search?q=CDB+BTG+when%3A30d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+        hint="cdb",
+    ),
+    Source(
+        "Google News — CDB taxas (7d)",
+        "https://news.google.com/rss/search?q=CDB+taxas+when%3A7d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.75,
+        hint="cdb",
+    ),
+    Source(
         "Google News — LCI e LCA",
         "https://news.google.com/rss/search?q=LCI+LCA+bancos&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.7,
