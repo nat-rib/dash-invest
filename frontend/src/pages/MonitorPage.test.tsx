@@ -78,12 +78,54 @@ const signals = {
   total: 1,
 };
 
+const backtest = {
+  snapshots: 10,
+  evaluated: 8,
+  horizon_days: 30,
+  buckets: [
+    { label: "0–20", count: 1, average_return: -0.05, hit_rate: 0 },
+    { label: "20–40", count: 1, average_return: 0.0, hit_rate: 0.5 },
+    { label: "40–60", count: 2, average_return: 0.02, hit_rate: 0.5 },
+    { label: "60–80", count: 2, average_return: 0.05, hit_rate: 0.5 },
+    { label: "80–100", count: 2, average_return: 0.1, hit_rate: 0.5 },
+  ],
+  rank_correlation: 0.8,
+  top_average: 0.1,
+  bottom_average: -0.05,
+  spread: 0.15,
+  available: true,
+  reason: null,
+};
+
+const alert = {
+  asset_key: "ticker:PETR4",
+  name: "Itaú Unibanco",
+  score: 85,
+  channel: "telegram",
+  message: "alerta",
+  sent_at: "2026-11-16T12:00:00Z",
+};
+
+const alertConfig = {
+  channels: ["console", "telegram"],
+  min_score: 80,
+  cooldown_days: 3,
+  max_alerts: 5,
+  telegram_configured: true,
+  email_configured: false,
+};
+
 describe("MonitorPage", () => {
   beforeEach(() => {
     vi.mocked(getJson).mockReset();
     vi.mocked(getJson).mockImplementation((url: string) => {
       if (url.startsWith("/api/monitor/candidates")) return Promise.resolve(candidates as never);
       if (url.startsWith("/api/monitor/signals")) return Promise.resolve(signals as never);
+      if (url.startsWith("/api/monitor/backtest")) return Promise.resolve(backtest as never);
+      if (url.startsWith("/api/monitor/alerts")) {
+        return Promise.resolve({ items: [alert], total: 1 } as never);
+      }
+      if (url.startsWith("/api/monitor/alert-config")) return Promise.resolve(alertConfig as never);
       return Promise.resolve({ items: [] } as never);
     });
   });
@@ -97,6 +139,17 @@ describe("MonitorPage", () => {
     expect(screen.getAllByText(/Lacuna de alocação/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Tesouro Selic atrai" })).toBeTruthy();
     expect(screen.getByText(/Sem dados: fundamentos/)).toBeTruthy();
+  });
+
+  it("mostra avaliação do ranking e alertas", async () => {
+    render(<MonitorPage />);
+
+    expect(await screen.findByText("Avaliação do ranking")).toBeTruthy();
+    expect(screen.getByText("15%")).toBeTruthy();
+    expect(screen.getByText("0.80")).toBeTruthy();
+    expect(screen.getByText("Itaú Unibanco")).toBeTruthy();
+    expect(screen.getByText(/Canais: console, telegram/)).toBeTruthy();
+    expect(screen.getByText(/Telegram configurado/)).toBeTruthy();
   });
 
   it("filtra pelo score mínimo", async () => {

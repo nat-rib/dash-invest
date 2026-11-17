@@ -1,0 +1,11 @@
+[Unit]
+Description=Agenda diária de snapshot e alertas do Dash-Invest
+
+[Timer]
+OnCalendar=*-*-* 07:30:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=dash-invest-monitor.service
+
+[Install]
+WantedBy=timers.target

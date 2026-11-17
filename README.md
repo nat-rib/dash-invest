@@ -143,3 +143,5 @@ A página **Monitor** cruza notícias de fontes abertas (InfoMoney, Money Times,
 Coleta manual: `python -m jobs.collect_signals`. Na VPS, o timer `dash-invest-signals.timer` roda seis vezes ao dia.
 
 É uma triagem, não recomendação. Fontes abertas podem conter ruído. Telegram ainda não está integrado — o passo a passo está em [`docs/telegram-monitor.md`](docs/telegram-monitor.md).
+
+O monitor grava um snapshot diário do ranking e envia alertas por console, bot do Telegram ou e-mail (com cooldown). Um backtest avalia o retorno futuro por faixa de score, a taxa de acerto e a correlação de postos. Configuração em [`docs/monitor-alerts.md`](docs/monitor-alerts.md).

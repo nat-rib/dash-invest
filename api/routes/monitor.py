@@ -8,15 +8,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from api.dependencies import Repositories as RepositoryBundle
 from api.dependencies import get_repositories
 from api.schemas.monitor import (
+    AlertConfigOut,
+    AlertListOut,
+    AlertOut,
     AssetMentionOut,
+    BacktestOut,
     CandidateListOut,
     CandidateOut,
     MonitorSourceListOut,
     MonitorSourceOut,
+    ScoreBucketOut,
     SignalListOut,
     SignalOut,
 )
 from api.services import monitor_service
+from src.monitor.alerts import settings_from_env
 from src.monitor.config import load_config
 
 router = APIRouter(prefix="/api", tags=["monitor"])
@@ -111,4 +117,74 @@ def monitor_sources() -> MonitorSourceListOut:
             MonitorSourceOut(name=source.name, url=source.url, weight=source.weight)
             for source in config.sources
         ]
+    )
+
+
+@router.get("/monitor/backtest", response_model=BacktestOut)
+def monitor_backtest(
+    repositories: Repositories,
+    horizon_days: int = Query(default=30, ge=7, le=365),
+    min_samples: int = Query(default=5, ge=1, le=100),
+) -> BacktestOut:
+    report = monitor_service.backtest(
+        repositories, horizon_days=horizon_days, min_samples=min_samples
+    )
+    return BacktestOut(
+        snapshots=report.snapshots,
+        evaluated=report.evaluated,
+        horizon_days=report.horizon_days,
+        buckets=[
+            ScoreBucketOut(
+                label=bucket.label,
+                count=bucket.count,
+                average_return=bucket.average_return,
+                hit_rate=bucket.hit_rate,
+            )
+            for bucket in report.buckets
+        ],
+        rank_correlation=report.rank_correlation,
+        top_average=report.top_average,
+        bottom_average=report.bottom_average,
+        spread=report.spread,
+        available=report.available,
+        reason=report.reason,
+    )
+
+
+@router.get("/monitor/alerts", response_model=AlertListOut)
+def monitor_alerts(
+    repositories: Repositories,
+    limit: int = Query(default=20, ge=1, le=200),
+) -> AlertListOut:
+    items = repositories.alerts.list(limit=limit)
+    return AlertListOut(
+        items=[
+            AlertOut(
+                asset_key=item.asset_key,
+                name=item.name,
+                score=item.score,
+                channel=item.channel,
+                message=item.message,
+                sent_at=item.sent_at,
+            )
+            for item in items
+        ],
+        total=len(items),
+    )
+
+
+@router.get("/monitor/alert-config", response_model=AlertConfigOut)
+def monitor_alert_config() -> AlertConfigOut:
+    settings = settings_from_env()
+    return AlertConfigOut(
+        channels=list(settings.channels),
+        min_score=settings.min_score,
+        cooldown_days=settings.cooldown_days,
+        max_alerts=settings.max_alerts,
+        telegram_configured=bool(
+            settings.telegram_bot_token and settings.telegram_chat_id
+        ),
+        email_configured=bool(
+            settings.smtp_host and settings.email_from and settings.email_to
+        ),
     )

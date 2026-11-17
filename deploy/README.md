@@ -151,3 +151,42 @@ docker exec dash-invest python -m jobs.collect_signals --sleep 2
 ```
 
 O monitor é uma triagem determinística, não recomendação de investimento. Telegram ainda não está integrado; o passo a passo está em [`docs/telegram-monitor.md`](../docs/telegram-monitor.md).
+
+## 9. Monitor: snapshot diário, backtest e alertas
+
+O timer `dash-invest-monitor.timer` roda às **07:30** (America/Sao_Paulo). Ele:
+
+1. grava um snapshot do ranking do dia (com preço de referência, quando houver);
+2. envia alertas dos candidatos acima do score mínimo, respeitando cooldown.
+
+Os snapshots alimentam o **backtest** na página Monitor (retorno futuro por faixa
+de score, taxa de acerto, spread topo-base e correlação de postos).
+
+Configuração no `.env` da VPS:
+
+```bash
+ALERT_CHANNELS=console,telegram   # ou console,email
+ALERT_MIN_SCORE=80
+ALERT_COOLDOWN_DAYS=3
+ALERT_MAX_PER_RUN=5
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+# SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD/ALERT_EMAIL_FROM/ALERT_EMAIL_TO
+```
+
+Teste os canais sem esperar o timer:
+
+```bash
+docker exec dash-invest python -m jobs.monitor_daily --test
+```
+
+Verificar e executar agora:
+
+```bash
+systemctl list-timers dash-invest-monitor.timer
+sudo systemctl start dash-invest-monitor.service
+journalctl -u dash-invest-monitor.service -n 50 --no-pager
+```
+
+O passo a passo do bot do Telegram e do SMTP está em
+[`docs/monitor-alerts.md`](../docs/monitor-alerts.md).

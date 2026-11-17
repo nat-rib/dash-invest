@@ -60,10 +60,13 @@ if command -v systemctl >/dev/null 2>&1 && [[ -d /etc/systemd/system ]]; then
   sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-prices.timer" /etc/systemd/system/
   sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-signals.service" /etc/systemd/system/
   sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-signals.timer" /etc/systemd/system/
+  sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-monitor.service" /etc/systemd/system/
+  sudo -n install -m 644 "$REPO_DIR/deploy/systemd/dash-invest-monitor.timer" /etc/systemd/system/
   sudo -n systemctl daemon-reload
   sudo -n systemctl enable --now dash-invest-prices.timer
   sudo -n systemctl enable --now dash-invest-signals.timer
-  echo "Timers habilitados: cotações 06:15 e sinais 06/09/12/15/18/21:20 (America/Sao_Paulo)."
+  sudo -n systemctl enable --now dash-invest-monitor.timer
+  echo "Timers habilitados: cotações 06:15, sinais 06/09/12/15/18/21:20 e monitor 07:30."
 fi
 
 echo
