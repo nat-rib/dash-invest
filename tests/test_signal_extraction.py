@@ -58,3 +58,17 @@ def test_banco_sem_cdb_nao_gera_produto():
     assets = {item.key for item in extract_assets("Nubank anuncia novo aplicativo.")}
 
     assert not any(key.startswith("fixed_income:cdb") for key in assets)
+
+
+def test_hint_de_fonte_cdb_identifica_banco_sem_palavra_cdb():
+    assets = {
+        item.key: item
+        for item in extract_assets(
+            "Nubank, Inter e C6 disputam a preferência do investidor.",
+            fixed_income_hint="cdb",
+        )
+    }
+
+    assert assets["fixed_income:cdb:nubank"].name == "CDB Nubank"
+    assert "fixed_income:cdb:inter" in assets
+    assert "fixed_income:cdb:c6-bank" in assets

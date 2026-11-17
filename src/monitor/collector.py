@@ -59,7 +59,13 @@ def collect(
                     published_at=item.published_at,
                     collected_at=collected_at,
                     content_hash=sha256(text.encode("utf-8")).hexdigest(),
-                    assets=tuple(extract_assets(text, issuers=issuers)),
+                    assets=tuple(
+                        extract_assets(
+                            text,
+                            issuers=issuers,
+                            fixed_income_hint=source.hint,
+                        )
+                    ),
                 )
             )
         if sleep > 0 and len(config.sources) > 1:
