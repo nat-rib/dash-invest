@@ -140,6 +140,8 @@ A visão arquitetural, decisões técnicas e fases de implementação estão doc
 
 A página **Monitor** cruza notícias de fontes abertas (InfoMoney, Money Times, Exame, CVM e Google News) com a carteira e ranqueia ativos por aderência. O score é determinístico e decomposto em lacuna de alocação (padrão: 60% em renda fixa), concentração, fundamentos, momento/risco e força do sinal; dados ausentes aparecem como limitação e reduzem a confiança.
 
+A página **Radar** mostra só os ativos ranqueados, em cards com filtros por classe, score e ordenação, e detalhes expansíveis (motivos, componentes, fontes e lacunas).
+
 Coleta manual: `python -m jobs.collect_signals`. Na VPS, o timer `dash-invest-signals.timer` roda seis vezes ao dia.
 
 É uma triagem, não recomendação. Fontes abertas podem conter ruído. Telegram ainda não está integrado — o passo a passo está em [`docs/telegram-monitor.md`](docs/telegram-monitor.md).

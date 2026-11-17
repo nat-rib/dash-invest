@@ -1623,3 +1623,53 @@ tr.selected-row td {
 .monitor-component strong {
   color: var(--text);
 }
+
+/* ----------------------------------------------------------------- Radar */
+.radar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.radar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.radar-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radar-reason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.radar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.radar-detail {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.radar-detail ul {
+  margin: 4px 0 0 18px;
+  padding: 0;
+}
