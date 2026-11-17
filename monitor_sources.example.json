@@ -13,6 +13,8 @@
     { "name": "InfoMoney", "url": "https://www.infomoney.com.br/feed/", "weight": 1.0 },
     { "name": "Money Times", "url": "https://www.moneytimes.com.br/feed/", "weight": 1.0 },
     { "name": "Exame", "url": "https://exame.com/feed/", "weight": 0.9 },
+    { "name": "Brazil Journal", "url": "https://braziljournal.com/feed/", "weight": 1.0 },
+    { "name": "Suno Notícias", "url": "https://www.suno.com.br/noticias/feed/", "weight": 0.9 },
     { "name": "CVM", "url": "https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS", "weight": 1.2 },
     {
       "name": "Google News — Tesouro Direto",
@@ -20,8 +22,38 @@
       "weight": 0.7
     },
     {
+      "name": "Google News — Tesouro taxas",
+      "url": "https://news.google.com/rss/search?q=Tesouro+Direto+taxas&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
       "name": "Google News — CDB e renda fixa",
       "url": "https://news.google.com/rss/search?q=CDB+renda+fixa&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — CDB banco privado",
+      "url": "https://news.google.com/rss/search?q=CDB+banco+privado&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.75
+    },
+    {
+      "name": "Google News — CDB bancos digitais",
+      "url": "https://news.google.com/rss/search?q=CDB+bancos+digitais&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — CDB Nubank/Inter/C6/BTG",
+      "url": "https://news.google.com/rss/search?q=CDB+%28Nubank+OR+Inter+OR+C6+OR+BTG%29&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — CDB banco Master",
+      "url": "https://news.google.com/rss/search?q=CDB+banco+Master&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.65
+    },
+    {
+      "name": "Google News — LCI e LCA",
+      "url": "https://news.google.com/rss/search?q=LCI+LCA+bancos&hl=pt-BR&gl=BR&ceid=BR:pt-419",
       "weight": 0.7
     },
     {
@@ -38,6 +70,16 @@
       "name": "Google News — cripto",
       "url": "https://news.google.com/rss/search?q=criptomoedas&hl=pt-BR&gl=BR&ceid=BR:pt-419",
       "weight": 0.6
+    },
+    {
+      "name": "Google News — Valor",
+      "url": "https://news.google.com/rss/search?q=site%3Avalor.globo.com+investimentos&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.8
+    },
+    {
+      "name": "Google News — B3",
+      "url": "https://news.google.com/rss/search?q=site%3Ab3.com.br%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.8
     }
   ]
 }

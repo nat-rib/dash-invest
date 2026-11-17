@@ -123,9 +123,9 @@ O timer usa o timezone do host (`timedatectl`). Se o host não estiver em `Ameri
 
 ## 8. Monitor de ativos (sinais)
 
-O timer `dash-invest-signals.timer` coleta notícias de fontes abertas seis vezes ao dia (06, 09, 12, 15, 18 e 21h) e grava sinais com os ativos mencionados. O ranking é calculado sob demanda pela página **Monitor**, cruzando os sinais com a carteira.
+O timer `dash-invest-signals.timer` coleta notícias de fontes abertas quatro vezes ao dia (06, 10, 14 e 18h) e grava sinais com os ativos mencionados. O ranking é calculado sob demanda pela página **Monitor**, cruzando os sinais com a carteira.
 
-Fontes padrão: InfoMoney, Money Times, Exame, CVM e Google News RSS (Tesouro, CDB, FIIs, ETFs e cripto). Para personalizar:
+Fontes padrão: InfoMoney, Money Times, Exame, Brazil Journal, Suno, CVM e consultas do Google News (Tesouro, CDB por banco, LCI/LCA, FIIs, ETFs, cripto, Valor e B3). Para personalizar:
 
 1. Copie `monitor_sources.example.json` para o volume de dados, por exemplo `/opt/personal-cloud/data/dash-invest/monitor_sources.json`.
 2. Ajuste `targets` (alocação-alvo), `max_asset_share` e a lista de `sources`.

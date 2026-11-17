@@ -96,6 +96,8 @@ def test_ranking_prioriza_renda_fixa_abaixo_do_alvo(client):
     petro = next(item for item in body["items"] if item["key"] == "ticker:PETR4")
     assert petro["components"]["concentration"] == 0.0
     assert petro["cnpj"] == "33000167000101"
+    assert petro["examples"]
+    assert petro["examples"][0]["url"] == "https://example/petrobras"
 
 
 def test_lista_sinais_e_fontes(client):

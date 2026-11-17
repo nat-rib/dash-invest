@@ -18,6 +18,7 @@ from api.schemas.monitor import (
     MonitorSourceListOut,
     MonitorSourceOut,
     ScoreBucketOut,
+    SignalExampleOut,
     SignalListOut,
     SignalOut,
 )
@@ -64,6 +65,15 @@ def monitor_candidates(
                 cnpj=item.cnpj,
                 price_provider=item.price_provider,
                 price_instrument=item.price_instrument,
+                examples=[
+                    SignalExampleOut(
+                        source=example.source,
+                        title=example.title,
+                        url=example.url,
+                        published_at=example.published_at,
+                    )
+                    for example in item.examples
+                ],
             )
             for item in items
         ],

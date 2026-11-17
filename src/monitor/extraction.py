@@ -77,6 +77,40 @@ CRYPTO_NAMES = {
     "LINK": "Chainlink", "LTC": "Litecoin", "BCH": "Bitcoin Cash",
 }
 
+# Bancos/instituições para CDB específico: (alias, nome, exige maiúscula?)
+CDB_BANKS: tuple[tuple[str, str, bool], ...] = (
+    ("nubank", "Nubank", False),
+    ("itau", "Itaú", False),
+    ("bradesco", "Bradesco", False),
+    ("santander", "Santander", False),
+    ("banco do brasil", "Banco do Brasil", False),
+    ("caixa economica", "Caixa", False),
+    ("Caixa", "Caixa", True),
+    ("btg pactual", "BTG Pactual", False),
+    ("XP", "XP", True),
+    ("inter", "Inter", False),
+    ("c6", "C6 Bank", False),
+    ("sicredi", "Sicredi", False),
+    ("sicoob", "Sicoob", False),
+    ("daycoval", "Daycoval", False),
+    ("bmg", "BMG", False),
+    ("sofisa", "Sofisa", False),
+    ("banco original", "Banco Original", False),
+    ("Original", "Banco Original", True),
+    ("banco pan", "Banco Pan", False),
+    ("banco safra", "Safra", False),
+    ("Safra", "Safra", True),
+    ("banco master", "Banco Master", False),
+    ("Master", "Banco Master", True),
+    ("will bank", "Will Bank", False),
+    ("neon", "Neon", False),
+    ("picpay", "PicPay", False),
+    ("mercado pago", "Mercado Pago", False),
+    ("pagbank", "PagBank", False),
+    ("banrisul", "Banrisul", False),
+    ("brb", "BRB", False),
+)
+
 FIXED_INCOME = (
     ("tesouro selic", "fixed_income:tesouro-selic", "Tesouro Selic"),
     ("tesouro ipca", "fixed_income:tesouro-ipca", "Tesouro IPCA+"),
@@ -147,6 +181,11 @@ def _normalize(value: str) -> str:
 
 def _digits(value: str) -> str:
     return "".join(char for char in value if char.isdigit())
+
+
+def _slug(value: str) -> str:
+    normalized = _normalize(value)
+    return re.sub(r"[^a-z0-9]+", "-", normalized).strip("-")
 
 
 def _infer_ticker(symbol: str) -> AssetMention:
@@ -223,7 +262,25 @@ def extract_assets(
                 )
             )
 
+    cdb_mentions = 0
+    if re.search(r"\bcdb\b", normalized):
+        for alias, bank_name, case_sensitive in CDB_BANKS:
+            haystack = text if case_sensitive else normalized
+            pattern = rf"\b{re.escape(alias if case_sensitive else _normalize(alias))}\b"
+            if re.search(pattern, haystack):
+                add(
+                    AssetMention(
+                        key=f"fixed_income:cdb:{_slug(bank_name)}",
+                        name=f"CDB {bank_name}",
+                        asset_class="renda_fixa",
+                        confidence=0.8,
+                    )
+                )
+                cdb_mentions += 1
+
     for phrase, key, name in FIXED_INCOME:
+        if key == "fixed_income:cdb" and cdb_mentions > 0:
+            continue
         if re.search(rf"\b{re.escape(phrase)}\b", normalized):
             add(
                 AssetMention(

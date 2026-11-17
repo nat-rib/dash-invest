@@ -32,3 +32,29 @@ def test_ticker_desconhecido_e_inferido_pelo_sufixo():
 
     assert assets["ticker:XPTO3"].asset_class == "acao"
     assert assets["ticker:XPTO11"].asset_class == "fundo"
+
+
+def test_cdb_por_banco_privado():
+    text = (
+        "CDB do Nubank paga 110% do CDI; o CDB do Banco Master e do Inter "
+        "aparecem na lista de melhores taxas."
+    )
+
+    assets = {item.key: item for item in extract_assets(text)}
+
+    assert assets["fixed_income:cdb:nubank"].name == "CDB Nubank"
+    assert "fixed_income:cdb:banco-master" in assets
+    assert "fixed_income:cdb:inter" in assets
+    assert "fixed_income:cdb" not in assets
+
+
+def test_cdb_generico_sem_banco():
+    assets = {item.key for item in extract_assets("CDB de liquidez diária rende mais.")}
+
+    assert "fixed_income:cdb" in assets
+
+
+def test_banco_sem_cdb_nao_gera_produto():
+    assets = {item.key for item in extract_assets("Nubank anuncia novo aplicativo.")}
+
+    assert not any(key.startswith("fixed_income:cdb") for key in assets)

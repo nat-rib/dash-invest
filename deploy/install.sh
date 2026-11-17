@@ -66,7 +66,7 @@ if command -v systemctl >/dev/null 2>&1 && [[ -d /etc/systemd/system ]]; then
   sudo -n systemctl enable --now dash-invest-prices.timer
   sudo -n systemctl enable --now dash-invest-signals.timer
   sudo -n systemctl enable --now dash-invest-monitor.timer
-  echo "Timers habilitados: cotações 06:15, sinais 06/09/12/15/18/21:20 e monitor 07:30."
+  echo "Timers habilitados: cotações 06:15, sinais 06/10/14/18:20 e monitor 07:30."
 fi
 
 echo

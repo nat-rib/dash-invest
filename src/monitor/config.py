@@ -29,6 +29,8 @@ DEFAULT_SOURCES: tuple[Source, ...] = (
     Source("InfoMoney", "https://www.infomoney.com.br/feed/", 1.0),
     Source("Money Times", "https://www.moneytimes.com.br/feed/", 1.0),
     Source("Exame", "https://exame.com/feed/", 0.9),
+    Source("Brazil Journal", "https://braziljournal.com/feed/", 1.0),
+    Source("Suno Notícias", "https://www.suno.com.br/noticias/feed/", 0.9),
     Source("CVM", "https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS", 1.2),
     Source(
         "Google News — Tesouro Direto",
@@ -36,8 +38,38 @@ DEFAULT_SOURCES: tuple[Source, ...] = (
         0.7,
     ),
     Source(
+        "Google News — Tesouro taxas",
+        "https://news.google.com/rss/search?q=Tesouro+Direto+taxas&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+    ),
+    Source(
         "Google News — CDB e renda fixa",
         "https://news.google.com/rss/search?q=CDB+renda+fixa&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+    ),
+    Source(
+        "Google News — CDB banco privado",
+        "https://news.google.com/rss/search?q=CDB+banco+privado&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.75,
+    ),
+    Source(
+        "Google News — CDB bancos digitais",
+        "https://news.google.com/rss/search?q=CDB+bancos+digitais&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+    ),
+    Source(
+        "Google News — CDB Nubank/Inter/C6/BTG",
+        "https://news.google.com/rss/search?q=CDB+%28Nubank+OR+Inter+OR+C6+OR+BTG%29&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.7,
+    ),
+    Source(
+        "Google News — CDB banco Master",
+        "https://news.google.com/rss/search?q=CDB+banco+Master&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.65,
+    ),
+    Source(
+        "Google News — LCI e LCA",
+        "https://news.google.com/rss/search?q=LCI+LCA+bancos&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.7,
     ),
     Source(
@@ -54,6 +86,16 @@ DEFAULT_SOURCES: tuple[Source, ...] = (
         "Google News — cripto",
         "https://news.google.com/rss/search?q=criptomoedas&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.6,
+    ),
+    Source(
+        "Google News — Valor",
+        "https://news.google.com/rss/search?q=site%3Avalor.globo.com+investimentos&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.8,
+    ),
+    Source(
+        "Google News — B3",
+        "https://news.google.com/rss/search?q=site%3Ab3.com.br%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.8,
     ),
 )
 
