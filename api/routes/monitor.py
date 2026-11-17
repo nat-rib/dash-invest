@@ -68,9 +68,14 @@ def monitor_signals(
     limit: int = Query(default=100, ge=1, le=500),
     source: str | None = Query(default=None),
     lookback_days: int | None = Query(default=30, ge=1, le=365),
+    with_assets: bool = Query(default=True),
 ) -> SignalListOut:
     items = monitor_service.signals(
-        repositories, limit=limit, source=source, lookback_days=lookback_days
+        repositories,
+        limit=limit,
+        source=source,
+        lookback_days=lookback_days,
+        with_assets=with_assets,
     )
     return SignalListOut(
         items=[
