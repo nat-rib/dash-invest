@@ -32,6 +32,7 @@ def test_migrations_are_versioned_and_idempotent(tmp_path):
         (4, "0004_performance_periods.sql"),
         (5, "0005_observations.sql"),
         (6, "0006_issuers.sql"),
+        (7, "0007_signals.sql"),
     ]
 
 

@@ -1,0 +1,15 @@
+[Unit]
+Description=Coleta sinais de notícias do Dash-Invest
+Documentation=https://github.com/nat-rib/dash-invest
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/opt/personal-cloud/apps/dash-invest
+ExecCondition=/bin/sh -c 'test "$(docker inspect -f "{{.State.Running}}" dash-invest 2>/dev/null)" = true'
+ExecStart=/usr/bin/docker exec dash-invest python -m jobs.collect_signals --sleep 2
+TimeoutStartSec=10min
+Nice=10

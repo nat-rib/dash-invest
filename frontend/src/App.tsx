@@ -10,6 +10,7 @@ import HistoricoPage from "./pages/HistoricoPage";
 import ImportPage from "./pages/ImportPage";
 import LedgerPage from "./pages/LedgerPage";
 import MercadoPage from "./pages/MercadoPage";
+import MonitorPage from "./pages/MonitorPage";
 import PerformancePage from "./pages/PerformancePage";
 import ResearchPage from "./pages/ResearchPage";
 import RiskPage from "./pages/RiskPage";
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="risco" element={<RiskPage />} />
         <Route path="screener" element={<ScreenerPage />} />
         <Route path="pesquisa" element={<ResearchPage />} />
+        <Route path="monitor" element={<MonitorPage />} />
         <Route path="fit" element={<FitPage />} />
         <Route path="historico" element={<HistoricoPage />} />
         <Route path="mercado" element={<MercadoPage />} />

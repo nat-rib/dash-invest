@@ -23,6 +23,7 @@ const NAV_GROUPS = [
       { to: "/risco", label: "Risco", icon: "📉" },
       { to: "/screener", label: "Screener", icon: "📋" },
       { to: "/pesquisa", label: "Pesquisa IA", icon: "🤖" },
+      { to: "/monitor", label: "Monitor", icon: "📡" },
       { to: "/amortizacao", label: "Amortizar ou investir", icon: "🧮" },
     ],
   },

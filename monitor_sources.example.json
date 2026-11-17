@@ -1,0 +1,43 @@
+{
+  "lookback_days": 14,
+  "max_asset_share": 0.1,
+  "targets": {
+    "renda_fixa": 0.6,
+    "acao": 0.15,
+    "fii": 0.1,
+    "etf": 0.05,
+    "cripto": 0.05,
+    "exterior": 0.05
+  },
+  "sources": [
+    { "name": "InfoMoney", "url": "https://www.infomoney.com.br/feed/", "weight": 1.0 },
+    { "name": "Money Times", "url": "https://www.moneytimes.com.br/feed/", "weight": 1.0 },
+    { "name": "Exame", "url": "https://exame.com/feed/", "weight": 0.9 },
+    { "name": "CVM", "url": "https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS", "weight": 1.2 },
+    {
+      "name": "Google News — Tesouro Direto",
+      "url": "https://news.google.com/rss/search?q=tesouro+direto&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — CDB e renda fixa",
+      "url": "https://news.google.com/rss/search?q=CDB+renda+fixa&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — fundos imobiliários",
+      "url": "https://news.google.com/rss/search?q=fundos+imobiliarios&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — ETF",
+      "url": "https://news.google.com/rss/search?q=ETF+Brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.7
+    },
+    {
+      "name": "Google News — cripto",
+      "url": "https://news.google.com/rss/search?q=criptomoedas&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.6
+    }
+  ]
+}
