@@ -17,7 +17,7 @@ RSS_B = b"""<?xml version="1.0"?><rss version="2.0"><channel>
 </channel></rss>"""
 
 RSS_HINT = b"""<?xml version="1.0"?><rss version="2.0"><channel>
-<item><title>Nubank e Inter lideram a preferencia</title><link>https://hint/1</link><description>Bancos digitais</description></item>
+<item><title>Nubank e Inter lideram na renda fixa</title><link>https://hint/1</link><description>Bancos digitais</description></item>
 </channel></rss>"""
 
 

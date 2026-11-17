@@ -64,7 +64,7 @@ def test_hint_de_fonte_cdb_identifica_banco_sem_palavra_cdb():
     assets = {
         item.key: item
         for item in extract_assets(
-            "Nubank, Inter e C6 disputam a preferência do investidor.",
+            "Nubank, Inter e C6 disputam a preferência na renda fixa.",
             fixed_income_hint="cdb",
         )
     }

@@ -127,6 +127,11 @@ FIXED_INCOME = (
     ("poupanca", "fixed_income:poupanca", "Poupança"),
 )
 
+# Indícios de que a notícia é sobre CDB/oferta, mesmo sem a palavra "CDB" no título.
+CDB_CUE_RE = re.compile(
+    r"\b(cdb|cdi|renda fixa|prefixado|pos-fixado|liquidez|lci|lca|rentabilidade|rende(?:m|ndo)?)\b"
+)
+
 # alias normalizado -> (ticker ou None, nome, classe, cnpj)
 COMPANIES: tuple[tuple[str, str, str, str, str | None], ...] = (
     ("petrobras", "PETR4", "Petrobras", "acao", "33.000.167/0001-01"),
@@ -264,7 +269,10 @@ def extract_assets(
             )
 
     cdb_mentions = 0
-    cdb_context = bool(re.search(r"\bcdb\b", normalized)) or fixed_income_hint == "cdb"
+    has_cdb_cue = bool(CDB_CUE_RE.search(normalized))
+    cdb_context = bool(re.search(r"\bcdb\b", normalized)) or (
+        fixed_income_hint == "cdb" and has_cdb_cue
+    )
     if cdb_context:
         for alias, bank_name, case_sensitive in CDB_BANKS:
             haystack = text if case_sensitive else normalized
