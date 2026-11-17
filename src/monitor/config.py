@@ -15,7 +15,7 @@ DEFAULT_TARGETS: dict[str, float] = {
     "exterior": 0.05,
 }
 DEFAULT_MAX_ASSET_SHARE = 0.10
-DEFAULT_LOOKBACK_DAYS = 14
+DEFAULT_LOOKBACK_DAYS = 30
 
 
 @dataclass(frozen=True)
@@ -23,6 +23,7 @@ class Source:
     name: str
     url: str
     weight: float = 1.0
+    hint: str | None = None
 
 
 DEFAULT_SOURCES: tuple[Source, ...] = (
@@ -51,21 +52,25 @@ DEFAULT_SOURCES: tuple[Source, ...] = (
         "Google News — CDB banco privado",
         "https://news.google.com/rss/search?q=CDB+banco+privado&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.75,
+        hint="cdb",
     ),
     Source(
         "Google News — CDB bancos digitais",
         "https://news.google.com/rss/search?q=CDB+bancos+digitais&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.7,
+        hint="cdb",
     ),
     Source(
         "Google News — CDB Nubank/Inter/C6/BTG",
         "https://news.google.com/rss/search?q=CDB+%28Nubank+OR+Inter+OR+C6+OR+BTG%29&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.7,
+        hint="cdb",
     ),
     Source(
         "Google News — CDB banco Master",
         "https://news.google.com/rss/search?q=CDB+banco+Master&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         0.65,
+        hint="cdb",
     ),
     Source(
         "Google News — LCI e LCA",
@@ -127,6 +132,7 @@ def load_config(path: str | Path | None = None) -> MonitorConfig:
             name=item["name"],
             url=item["url"],
             weight=float(item.get("weight", 1.0)),
+            hint=item.get("hint"),
         )
         for item in data.get("sources", [])
     ) or DEFAULT_SOURCES

@@ -17,6 +17,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", type=Path, default=None, help="JSON de fontes e alvos")
     parser.add_argument("--db", type=Path, default=None)
     parser.add_argument("--sleep", type=float, default=0.3, help="pausa entre fontes (s)")
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="reextrai ativos de sinais já existentes (mesmo link)",
+    )
     args = parser.parse_args(argv)
 
     database = SQLiteDatabase(
@@ -31,11 +36,12 @@ def main(argv: list[str] | None = None) -> int:
         SignalRepository(database),
         issuers=issuers,
         sleep=args.sleep,
+        refresh=args.refresh,
     )
 
     print(
-        f"{summary.inserted} novos sinais de {summary.sources_ok} fonte(s) "
-        f"({summary.items} itens lidos)"
+        f"{summary.inserted} sinais {'atualizados' if args.refresh else 'novos'} "
+        f"de {summary.sources_ok} fonte(s) ({summary.items} itens lidos)"
     )
     if summary.sources_failed:
         print(f"{summary.sources_failed} fonte(s) falharam")

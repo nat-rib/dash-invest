@@ -31,6 +31,7 @@ def collect(
     fetcher: Callable[[str], bytes] = fetch_feed,
     now: datetime | None = None,
     sleep: float = 0.3,
+    refresh: bool = False,
 ) -> CollectionSummary:
     collected_at = now or datetime.now(timezone.utc)
     signals: list[Signal] = []
@@ -59,13 +60,19 @@ def collect(
                     published_at=item.published_at,
                     collected_at=collected_at,
                     content_hash=sha256(text.encode("utf-8")).hexdigest(),
-                    assets=tuple(extract_assets(text, issuers=issuers)),
+                    assets=tuple(
+                        extract_assets(
+                            text,
+                            issuers=issuers,
+                            fixed_income_hint=source.hint,
+                        )
+                    ),
                 )
             )
         if sleep > 0 and len(config.sources) > 1:
             time.sleep(sleep)
 
-    inserted = repository.record_many(signals)
+    inserted = repository.record_many(signals, refresh=refresh)
     return CollectionSummary(
         sources_ok=sources_ok,
         sources_failed=sources_failed,

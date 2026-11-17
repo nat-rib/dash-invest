@@ -223,6 +223,7 @@ def extract_assets(
     text: str,
     *,
     issuers: Mapping[str, str] | None = None,
+    fixed_income_hint: str | None = None,
 ) -> list[AssetMention]:
     found: dict[str, AssetMention] = {}
 
@@ -263,7 +264,8 @@ def extract_assets(
             )
 
     cdb_mentions = 0
-    if re.search(r"\bcdb\b", normalized):
+    cdb_context = bool(re.search(r"\bcdb\b", normalized)) or fixed_income_hint == "cdb"
+    if cdb_context:
         for alias, bank_name, case_sensitive in CDB_BANKS:
             haystack = text if case_sensitive else normalized
             pattern = rf"\b{re.escape(alias if case_sensitive else _normalize(alias))}\b"
