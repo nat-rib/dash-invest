@@ -28,7 +28,11 @@ class Source:
 
 DEFAULT_SOURCES: tuple[Source, ...] = (
     Source("InfoMoney", "https://www.infomoney.com.br/feed/", 1.0),
-    Source("Money Times", "https://www.moneytimes.com.br/feed/", 1.0),
+    Source(
+        "Google News — Money Times",
+        "https://news.google.com/rss/search?q=site%3Amoneytimes.com.br+investimentos+when%3A7d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        0.9,
+    ),
     Source("Exame", "https://exame.com/feed/", 0.9),
     Source("Brazil Journal", "https://braziljournal.com/feed/", 1.0),
     Source("Suno Notícias", "https://www.suno.com.br/noticias/feed/", 0.9),

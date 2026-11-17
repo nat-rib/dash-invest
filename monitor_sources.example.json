@@ -11,7 +11,11 @@
   },
   "sources": [
     { "name": "InfoMoney", "url": "https://www.infomoney.com.br/feed/", "weight": 1.0 },
-    { "name": "Money Times", "url": "https://www.moneytimes.com.br/feed/", "weight": 1.0 },
+    {
+      "name": "Google News — Money Times",
+      "url": "https://news.google.com/rss/search?q=site%3Amoneytimes.com.br+investimentos+when%3A7d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+      "weight": 0.9
+    },
     { "name": "Exame", "url": "https://exame.com/feed/", "weight": 0.9 },
     { "name": "Brazil Journal", "url": "https://braziljournal.com/feed/", "weight": 1.0 },
     { "name": "Suno Notícias", "url": "https://www.suno.com.br/noticias/feed/", "weight": 0.9 },
